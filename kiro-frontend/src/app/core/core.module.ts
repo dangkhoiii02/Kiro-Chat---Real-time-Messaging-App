@@ -1,0 +1,111 @@
+/**
+ * Copyright 2026 trung-kieen
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import {
+  APP_INITIALIZER,
+  ModuleWithProviders,
+  NgModule,
+  Optional,
+  SkipSelf,
+} from '@angular/core';
+import { KeycloakBearerInterceptor, KeycloakService } from 'keycloak-angular';
+import { HTTP_INTERCEPTORS } from '@angular/common/http';
+import { AuthGuard } from './auth/auth.guard';
+import { HttpErrorInterceptor } from './middleware/http-error.interceptor';
+import { initializeKeycloak } from './auth/keycloak/keycloak.init';
+import { rxStompServiceFactory } from './socket/rx-stomp-service-factory';
+import { RxStomp, RxStompConfig } from '@stomp/rx-stomp';
+import {  rxStompConfigFactory } from './socket/rx-stomp.config';
+import { KeycloakAuthenticationManager } from './auth/keycloak-auth-manager';
+import { WebApiService } from './api/web-api.service';
+import { LoggerService } from './services/logger.service';
+import { WebSocketService } from './socket/websocket.service';
+import { DateInterceptor } from './middleware/date.interceptor';
+import { EnvService } from './services/env.service';
+import { CallSignalingService } from '../features/chat/service/call-signaling.service';
+
+@NgModule({
+  imports: [],
+})
+export class CoreModule {
+  constructor(@Optional() @SkipSelf() parentModule: CoreModule) {
+    if (parentModule) {
+      throw new Error(
+        'CoreModule is already loaded. Import it in the AppModule only.',
+      );
+    }
+  }
+
+  static forRoot(): ModuleWithProviders<CoreModule> {
+    return {
+      ngModule: CoreModule,
+      providers: [
+        {
+          provide: APP_INITIALIZER,
+          useFactory: initializeKeycloak,
+          multi: true,
+          deps: [KeycloakService, EnvService],
+        },
+        WebApiService,
+        KeycloakService, // Mark as provider in this module or auth module if separete
+        AuthGuard,
+        {
+          provide: HTTP_INTERCEPTORS,
+          useClass: HttpErrorInterceptor,
+          multi: true,
+        },
+        {
+          provide: HTTP_INTERCEPTORS,
+          useClass: DateInterceptor,
+          multi: true,
+        },
+        {
+          provide: HTTP_INTERCEPTORS,
+          useClass: KeycloakBearerInterceptor,
+          multi: true,
+        },
+        {
+          provide: KeycloakAuthenticationManager,
+          useClass: KeycloakAuthenticationManager,
+          deps: [KeycloakService],
+        },
+
+        {
+          provide: RxStompConfig,
+          useFactory: rxStompConfigFactory,
+          deps: [EnvService],
+        },
+        {
+          provide: RxStomp,
+          useFactory: rxStompServiceFactory,
+          deps: [KeycloakAuthenticationManager, RxStompConfig],
+        },
+        {
+          provide: LoggerService,
+          useClass: LoggerService,
+        },
+        {
+          provide: WebSocketService,
+          useClass: WebSocketService
+        },
+        {
+          provide: CallSignalingService,
+          useClass: CallSignalingService,
+        },
+      ],
+    };
+  }
+}

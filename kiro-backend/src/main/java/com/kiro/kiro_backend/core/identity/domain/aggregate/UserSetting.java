@@ -1,0 +1,80 @@
+/*
+ * Copyright 2026 trung-kieen
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.kiro.kiro_backend.core.identity.domain.aggregate;
+
+import com.kiro.kiro_backend.common.user.domain.aggregate.User;
+import com.kiro.kiro_backend.common.user.domain.vo.UserDBId;
+import com.kiro.kiro_backend.core.identity.domain.vo.ProfileVisibility;
+import com.kiro.kiro_backend.core.identity.domain.vo.UserFriendRequestSetting;
+import com.kiro.kiro_backend.core.identity.domain.vo.UserLastSeenSetting;
+
+import org.jilt.Builder;
+import org.jilt.Opt;
+
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+public class UserSetting {
+  private UserDBId userId;
+  private UserLastSeenSetting lastSeenSetting;
+  private UserFriendRequestSetting friendRequestSetting;
+  private ProfileVisibility profileVisibility;
+
+  public UserSetting(User user) {
+    this.userId = user.getDbId();
+    this.lastSeenSetting = UserLastSeenSetting.ofDefault();
+    this.friendRequestSetting = UserFriendRequestSetting.ofDefault();
+    this.profileVisibility = ProfileVisibility.ofDefault();
+  }
+
+  @Builder
+  public UserSetting(@Opt UserDBId userId, UserLastSeenSetting lastSeenSetting,
+      UserFriendRequestSetting friendRequestSetting,
+
+      ProfileVisibility profileVisibility) {
+    this.userId = userId;
+    this.lastSeenSetting = lastSeenSetting;
+    this.friendRequestSetting = friendRequestSetting;
+    this.profileVisibility = profileVisibility;
+  }
+
+  public static UserSetting of(UserSetting settings) {
+    if (settings == null) {
+      return UserSetting.ofDefault();
+    }
+    return UserSettingBuilder.userSetting()
+        .lastSeenSetting(UserLastSeenSetting.of(settings.getLastSeenSetting()))
+        .friendRequestSetting(UserFriendRequestSetting.of(settings.getFriendRequestSetting()))
+        .profileVisibility(ProfileVisibility.of(settings.getProfileVisibility()))
+        .build();
+  }
+
+  public static UserSetting ofDefault() {
+    return UserSettingBuilder.userSetting()
+        .lastSeenSetting(UserLastSeenSetting.ofDefault())
+        .friendRequestSetting(UserFriendRequestSetting.ofDefault())
+        .profileVisibility(ProfileVisibility.ofDefault())
+        .build();
+  }
+
+  public boolean isVisible() {
+    return profileVisibility.value();
+  }
+
+}

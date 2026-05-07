@@ -1,0 +1,187 @@
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # issuer-uri used for JwtDecoder auto-config (web tokens from localhost:9093)
+          issuer-uri: ${KEYCLOAK_ISSUER_URI_HOST:http://localhost:9093}/realms/${KEYCLOAK_REALM:kiro-realm}
+          # jwk-set-uri fetches public keys directly — also accepts tokens from 10.0.2.2:9093 (Android)
+          jwk-set-uri: ${KEYCLOAK_JWK_SET_URI_HOST:http://localhost:9093}/realms/${KEYCLOAK_REALM:kiro-realm}/protocol/openid-connect/certs
+  flyway:
+    enabled: true
+    locations: classpath:db/migrations
+    baseline-on-migrate: true
+    baseline-version: 0
+    validate-on-migrate: false # for production
+    url: ${SPRING_FLYWAY_URL:jdbc:postgresql://localhost:5432/kirodb}
+    user: ${SPRING_FLYWAY_USER:admin}
+    schemas: public
+    password: ${SPRING_FLYWAY_PASSWORD:admin}
+    clean-disabled: true
+
+    # clean-disabled: false
+    # clean-on-validation-error: true
+
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/kirodb}
+    username: ${SPRING_DATASOURCE_USERNAME:admin}
+    password: ${SPRING_DATASOURCE_PASSWORD:admin}
+    hikari:
+      poolName: Hikari
+      # Require to specify commit use like @Transactional
+      auto-commit: false # connection is acquired immediately upon entering a @Transactional
+    type: com.zaxxer.hikari.HikariDataSource
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: true
+    open-in-view: false # Release connection directly instead of wait for HTTP response completes
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        #generate_statistics: true
+        format_sql: true
+
+      # NOTE: Use for init database schema
+      # hibernate:
+      #   ddl-auto: create
+      # properties:
+      # jakarta:
+      #   persistence:
+      #     schema-generation:
+      #       scripts:
+      #         action: create
+      #         create-target: src/main/resources/schema.sql
+
+      # NOTE: disable sql staging script
+      # jakarta:
+      #   persistence:
+      #     schema-generation:
+      #       create-source: metadata
+      #       scripts:
+      #         action: update
+      #         create-target: src/main/resources/update.sql
+
+  # Disable
+  devtools:
+    restart:
+      enabled: true
+    livereload:
+      enabled: true
+
+  # Define message queue connection
+  rabbitmq:
+    host: ${SPRING_RABBITMQ_HOST:localhost}
+    port: ${SPRING_RABBITMQ_PORT:5672}
+    virtual-host: ${SPRING_RABBITMQ_VIRTUAL_HOST:/}
+    username: ${SPRING_RABBITMQ_USERNAME:admin}
+    password: ${SPRING_RABBITMQ_PASSWORD}
+
+    stomp:
+      enabled: true
+      host: ${SPRING_RABBITMQ_STOMP_HOST:localhost}
+      port: ${SPRING_RABBITMQ_STOMP_PORT:61613}
+  websocket:
+    max-text-message-size: 8192
+    max-binary-message-size: 8192
+
+stomp.relay:
+  type: ${STOMP_RELAY_TYPE:rabbitmq} # rabbitmq | inmemory
+  relay-host: ${STOMP_RELAY_HOST:localhost}
+  relay-port: ${STOMP_RELAY_PORT:61613}
+  client-login: ${STOMP_RELAY_CLIENT_LOGIN:admin}
+  client-passcode: ${STOMP_RELAY_CLIENT_PASSCODE:admin}
+  system-login: ${STOMP_RELAY_SYSTEM_LOGIN:admin}
+  system-passcode: ${STOMP_RELAY_SYSTEM_PASSCODE:admin}
+  system-heartbeat-send-interval: 5000
+  system-heartbeat-receive-interval: 4000
+
+application:
+  client-base-url: ${APPLICATION_CLIENT_BASE_URL:http://localhost:4200}
+  cors:
+    allowed-origins: ${APPLICATION_CORS_ALLOWED_ORIGINS:http://localhost:4200}
+    allowed-methods: "*"
+    # allowed-mappings: "/**"
+    allowed-headers: "*"
+    exposed-headers: "*"
+    allow-credentials: true
+    max-age: 300
+
+management:
+  endpoints:
+    prometheus:
+      enabled: true # Check /actuator/prometheus
+    jmx:
+      exposure:
+        include: health,info
+
+    web:
+      exposure:
+        include: "*"
+        # include: health,info,metrics,prometheus,httpexchanges
+
+        exclude: env,beans
+
+  endpoint:
+    health:
+      show-details: always
+    prometheus:
+      enabled: true
+    metrics:
+      enabled: true
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    tags:
+      application: kiro-app
+    distribution.percentiles-histogram.http:
+      server.requests: true
+      client.requests: true # 50ms,100ms,200ms,500ms,1s,5s #true
+
+flyway:
+  enabled: true
+  url: ${SPRING_FLYWAY_URL:jdbc:postgresql://localhost:5432/kirodb}
+  user: ${SPRING_FLYWAY_USER:admin}
+  schemas: public
+  password: ${SPRING_FLYWAY_PASSWORD:admin}
+  locations: src/main/resources/db/migrations
+
+shell:
+  interactive:
+    enabled: false
+
+logging:
+  com.kiro.kiro_backend: DEBUG
+  # level.org.springframework:
+  #   messaging: TRACE
+  #   web.socket: TRACE
+
+  # level:
+  #   org.springframework.security.web.FilterChainProxy: TRACE
+keycloak:
+  auth-server-url: ${KEYCLOAK_ISSUER_URI_HOST:http://localhost:9093}
+  internal-server-url: ${KEYCLOAK_JWK_SET_URI_HOST:http://localhost:9093}
+  resource: ${KEYCLOAK_RESOURCE:spring}
+  public-client: false
+  migration-password: ${KEYCLOAK_MIGRATION_PASSWORD:examplekiro123}
+  credentials:
+    username: ${KEYCLOAK_CREDENTIALS_USERNAME:admin}
+    password: ${KEYCLOAK_CREDENTIALS_PASSWORD:admin}
+
+upload:
+  minio:
+    enable: ${UPLOAD_MINIO_ENABLE:true}
+    url: ${UPLOAD_MINIO_URL:http://localhost:9000}
+    access-key: ${UPLOAD_MINIO_ACCESS_KEY:minioadmin}
+    secret-key: ${UPLOAD_MINIO_SECRET_KEY}
+    secure: false
+    bucket: ${UPLOAD_MINIO_BUCKET:kiro-bucket-01}
+    metric-name: ""
+    url-prefix: ${UPLOAD_MINIO_URL_PREFIX:http://localhost:9000}
+    region: ${UPLOAD_MINIO_REGION:us-east-1}
+
+livekit:
+  url: ${LIVEKIT_URL:ws://localhost:7880}
+  api-key: ${LIVEKIT_API_KEY:devkey}
+  api-secret: ${LIVEKIT_API_SECRET:secret}

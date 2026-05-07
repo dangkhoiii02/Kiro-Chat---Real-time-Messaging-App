@@ -1,0 +1,38 @@
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+*.iml
+
+# Environment files
+.env
+*.env.local
+kiro-backend/.env
+kiro-mobile/local.properties
+
+# Dependencies
+node_modules/
+
+# Build outputs and caches
+dist/
+build/
+target/
+.gradle/
+.angular/
+out/
+
+# Runtime logs
+logs/
+*.log
+*.log.gz
+
+# Local Docker/data exports
+postgres-data/
+local-dev/backups/
+local-dev/keycloak-data/export/
+local-dev/keycloak-data/transaction-logs/
+
+# Java heap dumps and JVM crash logs
+*.hprof
+hs_err_pid*.log
+

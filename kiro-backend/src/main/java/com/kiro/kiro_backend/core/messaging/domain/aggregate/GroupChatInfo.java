@@ -1,0 +1,75 @@
+/*
+ * Copyright 2026 trung-kieen
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.kiro.kiro_backend.core.messaging.domain.aggregate;
+
+import com.kiro.kiro_backend.common.user.domain.vo.PublicId;
+import com.kiro.kiro_backend.core.conversation.domain.aggregate.Conversation;
+import com.kiro.kiro_backend.core.conversation.domain.vo.ConversationId;
+import com.kiro.kiro_backend.core.conversation.domain.vo.ParticipantCount;
+import com.kiro.kiro_backend.core.groups.domain.aggregate.GroupProfile;
+import com.kiro.kiro_backend.core.groups.domain.vo.GroupId;
+import com.kiro.kiro_backend.core.groups.domain.vo.GroupImageUrl;
+import com.kiro.kiro_backend.core.groups.domain.vo.GroupName;
+
+import org.jilt.Builder;
+import org.jilt.BuilderStyle;
+
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+public class GroupChatInfo {
+
+  private ConversationId conversationId;
+  private PublicId conversationPublicId;
+
+  // group conversation
+  private GroupId groupId;
+  private PublicId groupPublicId;
+  private GroupName groupName;
+  private GroupImageUrl profileImage;
+  private ParticipantCount participantCount;
+
+  @Builder(style = BuilderStyle.STAGED)
+  public GroupChatInfo(ConversationId conversationId, PublicId conversationPublicId, GroupId groupId,
+      PublicId groupPublicId, GroupName groupName, GroupImageUrl profileImage, ParticipantCount participantCount) {
+    this.conversationId = conversationId;
+    this.conversationPublicId = conversationPublicId;
+    this.groupId = groupId;
+    this.groupPublicId = groupPublicId;
+    this.groupName = groupName;
+    this.profileImage = profileImage;
+    this.participantCount = participantCount;
+  }
+
+  @Builder(style = BuilderStyle.STAGED, className = "GroupChatInfoBuilderForConversation")
+  public static GroupChatInfo from(Conversation conversation, GroupProfile groupProfile,
+      ParticipantCount participantCount) {
+    return GroupChatInfoBuilder
+        .groupChatInfo()
+        .conversationId(conversation.getId())
+        .conversationPublicId(conversation.getPublicId())
+        .groupId(groupProfile.getId())
+        .groupPublicId(groupProfile.getPublicId())
+        .groupName(groupProfile.getGroupName())
+        .profileImage(groupProfile.getGroupProfilePicture())
+        .participantCount(participantCount)
+        .build();
+  }
+
+}

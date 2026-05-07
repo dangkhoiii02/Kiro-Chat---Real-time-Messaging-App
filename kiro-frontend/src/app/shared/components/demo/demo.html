@@ -1,0 +1,50 @@
+<!--
+ Copyright 2026 trung-kieen
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
+
+
+<div>
+  Messageing sending place
+  <div id="messages" class="p-10">
+    <button class="btn btn-primary p-2 bg-neutral-200" (click)="onSendMessage()">Send Test Message</button>
+    <h2>Received messages</h2>
+    <ol>
+      @for(message of receivesMessage(); track message){
+        <li class="message">{{message.content}}</li>
+      }
+    </ol>
+  </div>
+</div>
+
+<hr>
+
+<div>
+  <h1>Presence testing place</h1>
+  <div>
+    <button (click)="onHeartbeat()" class="bg-neutral-200 p-3 m-2" type="button">Set online/Heatbeat</button>
+  </div>
+  <div>
+    <button (click)="onOffline()" class="bg-neutral-200 p-3 m-2" type="button">Emplicit offline (Fake logout)</button>
+  </div>
+
+  <div>
+    <span>Presence state: </span>
+    @if(presence(); as p){
+      <div>Status: {{p.status}}</div>
+      <div>Last seen: {{p.lastSeen}}</div>
+      <div>Connected at: {{p.connectedAt}}</div>
+    }
+  </div>
+</div>

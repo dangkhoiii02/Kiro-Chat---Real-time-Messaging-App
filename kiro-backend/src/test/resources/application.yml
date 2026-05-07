@@ -1,0 +1,30 @@
+spring:
+  main.web-application-type: none
+
+  profiles:
+    active: "dev"
+  flyway:
+    enabled: false
+  datasource:
+    url: jdbc:h2:mem:test;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;MODE=PostgreSQL
+    username: sa
+    password:
+    hikari:
+      poolName: Hikari
+    type: com.zaxxer.hikari.HikariDataSource
+  jpa.hibernate.ddl-auto: create-drop
+  security:
+    oauth2:
+      resourceserver:
+        jwt.issuer-uri: http://localhost:9093/realms/kiro-realm
+  threads:
+    virtual:
+      enabled: true
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 100MB
+      max-request-size: 100MB
+server:
+  servlet:
+    context-path: /api

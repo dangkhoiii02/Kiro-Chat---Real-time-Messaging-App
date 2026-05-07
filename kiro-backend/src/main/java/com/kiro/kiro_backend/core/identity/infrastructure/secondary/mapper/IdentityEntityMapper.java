@@ -1,0 +1,102 @@
+/*
+ * Copyright 2026 trung-kieen
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.kiro.kiro_backend.core.identity.infrastructure.secondary.mapper;
+
+import java.util.List;
+
+import com.kiro.kiro_backend.common.ddd.infrastructure.contract.DomainEntityMapper;
+import com.kiro.kiro_backend.common.ddd.infrastructure.stereotype.SecondaryMapper;
+import com.kiro.kiro_backend.common.user.infrastructure.secondary.entity.UserEntity;
+import com.kiro.kiro_backend.core.identity.domain.aggregate.PersonalProfile;
+import com.kiro.kiro_backend.core.identity.domain.aggregate.PublicProfile;
+import com.kiro.kiro_backend.core.identity.domain.aggregate.UserSetting;
+import com.kiro.kiro_backend.core.identity.domain.aggregate.UserSummary;
+import com.kiro.kiro_backend.core.identity.infrastructure.secondary.entity.UserSettingEntity;
+import com.kiro.kiro_backend.core.social.domain.vo.FriendshipStatus;
+
+import lombok.RequiredArgsConstructor;
+
+@SecondaryMapper
+@RequiredArgsConstructor
+public class IdentityEntityMapper implements DomainEntityMapper<UserSetting, UserSettingEntity> {
+  private final MapStructIdentityEntityMapper mapstruct;
+
+  public PublicProfile toPublicProfile(UserEntity userEntity, FriendshipStatus connectionStatus) {
+    return mapstruct.toPublicProfile(userEntity, connectionStatus);
+  }
+
+
+  public PublicProfile toPublicProfile(UserEntity userEntity) {
+    return mapstruct.toPublicProfile(userEntity, FriendshipStatus.ofDefault());
+
+  }
+
+  // public PublicProfile toPublicProfile(UserEntity userEntity, FriendshipStatus
+  // status) {
+  // return PublicProfileBuilder.publicProfile()
+  // .publicId(new PublicId(userEntity.getPublicId()))
+  // .userDBId(new UserDBId(userEntity.getId()))
+  // .email(new UserEmail(userEntity.getEmail()))
+  // .fullname(
+  // UserFullname.from(new UserFirstname(userEntity.getFirstname()), new
+  // UserLastname(userEntity.getLastname())))
+  // .username(new Username(userEntity.getUsername()))
+  // .imageUrl(new UserImageUrl(userEntity.getProfilePicture()))
+  // .createdDate(userEntity.getCreatedDate())
+  // .connectionStatus(null)
+  // .build();
+  // }
+
+  public PersonalProfile toPersonalProfile(UserEntity userEntity) {
+    return mapstruct.toPersonalProfile(userEntity);
+  }
+
+  public UserEntity from(PersonalProfile profile) {
+    return mapstruct.from(profile);
+
+    // return UserEntityBuilder.userEntity()
+    // .publicId(profile.getUserPublicId().value())
+    // .id(profile.getDbId())
+    // .email(profile.getEmail().value())
+    // .firstname(profile.getFullname().getFirstname().value())
+    // .lastname(profile.getFullname().getLastname().value())
+    // .username(profile.getUsername().value())
+    // .profilePicture(profile.getImageUrl().value())
+    // .bio(profile.getBio().value())
+    // .lastActive(profile.getLastActive())
+    // .authorities(authorityEntityMapper.from(profile.getAuthorities()))
+    // .build();
+  }
+
+  public UserSummary toUserSummary(UserEntity entity) {
+    return mapstruct.toUserSummary(entity);
+  }
+
+  public List<UserSummary> toUserSummary(List<UserEntity> userEntities) {
+    return userEntities.stream().map(this::toUserSummary).toList();
+  }
+
+  @Override
+  public UserSetting toDomain(UserSettingEntity settings) {
+    return mapstruct.toDomain(settings);
+  }
+
+  @Override
+  public UserSettingEntity from(UserSetting domainObjectt) {
+    return mapstruct.from(domainObjectt);
+  }
+}

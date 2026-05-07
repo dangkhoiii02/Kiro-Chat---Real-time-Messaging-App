@@ -1,0 +1,244 @@
+<!--
+ Copyright 2026 trung-kieen
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
+
+<main id="main-content" class="flex h-[calc(100vh-4rem)]">
+  <section id="group-profile" class="flex-1 bg-white flex flex-col">
+
+    <!-- ── Header ── -->
+    <div id="profile-header" class="p-4 border-b border-neutral-200 bg-white">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-4">
+          <button class="text-neutral-400 hover:text-neutral-600" (click)="onBack()">
+            <i class="fa-solid fa-arrow-left text-xl"></i>
+          </button>
+          <h3 class="text-lg text-black">Group Info</h3>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Loading / Error states ── -->
+    @if (loading()) {
+      <div class="flex-1 flex items-center justify-center text-neutral-400">
+        <i class="fa-solid fa-spinner fa-spin text-2xl"></i>
+      </div>
+    } @else if (error()) {
+      <div class="flex-1 flex items-center justify-center p-6">
+        <p class="text-red-500 text-sm text-center">{{ error() }}</p>
+      </div>
+    } @else {
+
+      <!-- ── Scrollable Content ── -->
+      <div id="profile-content" class="flex-1 overflow-y-auto">
+        <div class="p-6 space-y-6">
+
+          <!-- ── Action feedback banners ── -->
+          @if (actionError()) {
+            <div class="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3">
+              <i class="fa-solid fa-circle-exclamation shrink-0"></i>
+              <span>{{ actionError() }}</span>
+            </div>
+          }
+          @if (actionSuccess()) {
+            <div class="flex items-center gap-2 bg-green-50 border border-green-200 text-green-700 text-sm rounded-lg px-4 py-3">
+              <i class="fa-solid fa-circle-check shrink-0"></i>
+              <span>{{ actionSuccess() }}</span>
+            </div>
+          }
+
+          <!-- ── Avatar + Name ── -->
+          <div class="flex flex-col items-center space-y-4">
+            <div class="relative">
+              <img
+                [src]="profileImage() ?? 'https://api.dicebear.com/7.x/notionists/svg?scale=200&seed=default'"
+                [alt]="groupName()"
+                class="w-24 h-24 rounded-full object-cover"
+              />
+              @if (isAdmin()) {
+                <!-- Hidden file input for avatar upload -->
+                <input
+                  #avatarInput
+                  type="file"
+                  accept="image/*"
+                  class="hidden"
+                  (change)="onAvatarFileSelected($event)"
+                />
+                <button
+                  (click)="avatarInput.click()"
+                  [disabled]="isUploadingAvatar()"
+                  class="absolute bottom-0 right-0 w-8 h-8 bg-neutral-500 text-white rounded-full flex items-center justify-center hover:bg-neutral-600 disabled:opacity-50">
+                  @if (isUploadingAvatar()) {
+                    <i class="fa-solid fa-spinner fa-spin text-sm"></i>
+                  } @else {
+                    <i class="fa-solid fa-camera text-sm"></i>
+                  }
+                </button>
+              }
+            </div>
+
+            <div class="text-center w-full max-w-xs">
+              <!-- Group name display / edit -->
+              @if (isEditingName()) {
+                <div class="flex items-center gap-2 justify-center">
+                  <input
+                    type="text"
+                    [(ngModel)]="editNameValue"
+                    [ngModel]="editNameValue()"
+                    (ngModelChange)="editNameValue.set($event)"
+                    class="border border-neutral-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-400 w-48"
+                    (keyup.enter)="saveGroupName()"
+                    (keyup.escape)="cancelEditName()"
+                    autofocus
+                  />
+                  <button
+                    (click)="saveGroupName()"
+                    [disabled]="isSavingName()"
+                    class="text-green-600 hover:text-green-700 disabled:opacity-50">
+                    @if (isSavingName()) {
+                      <i class="fa-solid fa-spinner fa-spin text-sm"></i>
+                    } @else {
+                      <i class="fa-solid fa-check text-sm"></i>
+                    }
+                  </button>
+                  <button (click)="cancelEditName()" class="text-neutral-400 hover:text-neutral-600">
+                    <i class="fa-solid fa-times text-sm"></i>
+                  </button>
+                </div>
+              } @else {
+                <div class="flex items-center space-x-2 justify-center">
+                  <h2 class="text-xl text-black">{{ groupName() }}</h2>
+                  @if (isAdmin()) {
+                    <button (click)="startEditName()" class="text-neutral-400 hover:text-neutral-600">
+                      <i class="fa-solid fa-edit text-sm"></i>
+                    </button>
+                  }
+                </div>
+              }
+
+              @if (createdAt()) {
+                <p class="text-sm text-neutral-500 mt-1">
+                  Created on {{ createdAt()! | messageTime }}
+                </p>
+              }
+              <p class="text-xs text-neutral-400 mt-1">
+                {{ onlineCount() }} online · {{ participantCount() }} members
+              </p>
+            </div>
+          </div>
+
+          <!-- ── Notifications toggle ── -->
+          <div class="space-y-4">
+            <div class="flex items-center justify-between p-4 bg-neutral-50 rounded-lg">
+              <div class="flex items-center space-x-3">
+                <i class="fa-solid fa-bell text-neutral-600"></i>
+                <span class="text-neutral-700">Notifications</span>
+              </div>
+              <label class="relative inline-flex items-center cursor-pointer" (click)="toggleNotifications()">
+                <input type="checkbox" [checked]="notificationsEnabled()" class="sr-only peer" readonly />
+                <div class="w-11 h-6 bg-neutral-200 peer-focus:outline-none rounded-full peer
+                            peer-checked:after:translate-x-full peer-checked:after:border-white
+                            after:content-[''] after:absolute after:top-[2px] after:left-[2px]
+                            after:bg-white after:border-neutral-300 after:border after:rounded-full
+                            after:h-5 after:w-5 after:transition-all peer-checked:bg-neutral-500">
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <!-- ── Members list ── -->
+          <div class="space-y-4">
+            <div class="flex items-center justify-between">
+              <h3 class="text-lg text-black">
+                Members ({{ participantCount() }})
+              </h3>
+            </div>
+
+            <div class="space-y-3">
+              @for (participant of participants(); track participant.userId) {
+                <div class="flex items-center justify-between p-3 bg-neutral-50 rounded-lg">
+
+                  <!-- Avatar + name -->
+                  <div class="flex items-center space-x-3">
+                    <div class="relative">
+                      <img
+                        [src]="participant.avatarUrl ?? 'https://api.dicebear.com/7.x/notionists/svg?scale=200&seed=' + participant.userId"
+                        [alt]="participant.fullname"
+                        class="w-10 h-10 rounded-full object-cover"
+                      />
+                      <!-- Online dot -->
+                      @if (participant.presence?.status === 'online') {
+                        <span class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-white"></span>
+                      }
+                    </div>
+                    <div>
+                      <p class="text-sm text-neutral-900">{{ participant.fullname }}</p>
+                      <p class="text-xs text-neutral-500 capitalize">{{ participant.role }}</p>
+                    </div>
+                  </div>
+
+                  <!-- Actions -->
+                  <div class="flex items-center space-x-2">
+                    @if (participant.role === 'admin') {
+                      <span class="px-2 py-1 bg-neutral-200 text-neutral-700 text-xs rounded">Admin</span>
+                    }
+
+                    <!-- Admin can promote/remove others (not themselves) -->
+                    @if (isAdmin() && participant.userId !== currentUserId()) {
+                      @if (participant.role === 'member') {
+                        <button
+                          class="text-neutral-400 hover:text-neutral-600"
+                          title="Promote to admin"
+                          (click)="promoteToAdmin(participant)">
+                          <i class="fa-solid fa-crown text-sm"></i>
+                        </button>
+                      }
+                      <button
+                        class="text-neutral-400 hover:text-red-500"
+                        title="Remove member"
+                        (click)="removeMember(participant)">
+                        <i class="fa-solid fa-user-minus text-sm"></i>
+                      </button>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+
+          <!-- ── Danger zone ── -->
+          <div class="space-y-3 pt-4 border-t border-neutral-200">
+            <button
+              class="w-full px-4 py-3 bg-neutral-100 text-neutral-700 rounded-lg hover:bg-neutral-200 flex items-center justify-center space-x-2"
+              (click)="leaveGroup()">
+              <i class="fa-solid fa-sign-out-alt"></i>
+              <span>Leave Group</span>
+            </button>
+
+            @if (isAdmin()) {
+              <button
+                class="w-full px-4 py-3 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 flex items-center justify-center space-x-2"
+                (click)="deleteGroup()">
+                <i class="fa-solid fa-trash"></i>
+                <span>Delete Group</span>
+              </button>
+            }
+          </div>
+
+        </div>
+      </div>
+
+    } <!-- end @else -->
+  </section>
+</main>

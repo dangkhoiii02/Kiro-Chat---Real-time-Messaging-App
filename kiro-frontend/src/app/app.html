@@ -1,0 +1,74 @@
+<!--
+ Copyright 2026 trung-kieen
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
+
+<div class="flex flex-col h-screen bg-neutral-50">
+  <header
+    class="h-14 bg-white border-b border-neutral-200 flex items-center px-4 z-50 shrink-0"
+  >
+    <!-- hamburger -->
+    <button
+      (click)="toggleSidebar()"
+      class="lg:hidden mr-3 p-2 hover:bg-neutral-100 rounded-lg transition-colors"
+      aria-label="Toggle menu"
+    >
+      <i class="fa-solid fa-bars text-neutral-600 text-lg"></i>
+    </button>
+
+    <!-- Brand -->
+    <div class="flex items-center space-x-2 flex-1">
+      <i class="fa-solid fa-message text-neutral-600 text-xl"></i>
+      <h1 class="text-lg font-semibold text-neutral-800">Kiro</h1>
+    </div>
+
+    <!-- Actions -->
+    <!-- <div class="flex items-center space-x-2"> -->
+    <!--   <button class="p-2 hover:bg-neutral-100 rounded-lg transition-colors" (click)="openNofications()"> -->
+    <!--     <i  class="fa-solid fa-bell text-neutral-600"></i> -->
+    <!--   </button> -->
+    <!--   <button class="p-2 hover:bg-neutral-100 rounded-lg transition-colors" (click)="openSettings()"> -->
+    <!--     <i class="fa-solid fa-gear text-neutral-600"></i> -->
+    <!--   </button> -->
+    <!-- </div> -->
+  </header>
+
+  <main id="main-content" class="flex flex-1 overflow-hidden">
+    <!-- Backdrop overlay -->
+    @if (isSidebarOpen()) {
+      <button
+        class="lg:hidden fixed inset-0 bg-black/40 z-40 transition-opacity"
+        (click)="closeSidebar()"
+      ></button>
+    }
+
+    <app-sidebar
+      [class.translate-x-0]="isSidebarOpen()"
+      [class.-translate-x-full]="!isSidebarOpen()"
+      class="w-60 flex-shrink-0 fixed lg:static inset-y-0 left-0 z-50 transition-transform duration-300 ease-in-out lg:translate-x-0"
+    ></app-sidebar>
+
+    <!-- This is the critical part – remove overflow-hidden, allow scroll here -->
+    <div class="flex-1 overflow-y-auto w-full">
+      <router-outlet></router-outlet>
+    </div>
+  </main>
+</div>
+
+<!-- Global incoming call modal — always visible regardless of current route -->
+<app-incoming-call-modal
+  [callInfo]="signalingService.incomingCallInfo()"
+  (accept)="onAcceptIncomingCall()"
+  (decline)="onRejectIncomingCall()"
+/>

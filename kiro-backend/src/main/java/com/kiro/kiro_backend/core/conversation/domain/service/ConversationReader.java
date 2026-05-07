@@ -1,0 +1,186 @@
+/*
+ * Copyright 2026 trung-kieen
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.kiro.kiro_backend.core.conversation.domain.service;
+
+import java.util.List;
+import java.util.Optional;
+
+import com.kiro.kiro_backend.common.ddd.infrastructure.stereotype.AntiDomainService;
+import com.kiro.kiro_backend.common.user.domain.aggregate.User;
+import com.kiro.kiro_backend.common.validation.domain.ResourceNotFoundException;
+import com.kiro.kiro_backend.core.conversation.domain.aggregate.Chat;
+import com.kiro.kiro_backend.core.conversation.domain.aggregate.Conversation;
+import com.kiro.kiro_backend.core.conversation.domain.aggregate.DirectChatBuilder;
+import com.kiro.kiro_backend.core.conversation.domain.aggregate.GroupChatBuilder;
+import com.kiro.kiro_backend.core.conversation.domain.aggregate.Participant;
+import com.kiro.kiro_backend.core.conversation.domain.aggregate.UserChatList;
+import com.kiro.kiro_backend.core.conversation.domain.aggregate.UserConversation;
+import com.kiro.kiro_backend.core.conversation.domain.repository.ConversationRepository;
+import com.kiro.kiro_backend.core.conversation.domain.repository.ParticipantRepository;
+import com.kiro.kiro_backend.core.conversation.domain.vo.ConversationUnreadMessageCount;
+import com.kiro.kiro_backend.core.conversation.domain.vo.ParticipantCount;
+import com.kiro.kiro_backend.core.conversation.domain.vo.UnreadCount;
+import com.kiro.kiro_backend.core.discovery.domain.repository.UserConnectionResolver;
+import com.kiro.kiro_backend.core.groups.domain.aggregate.GroupProfile;
+import com.kiro.kiro_backend.core.groups.domain.repository.GroupRepository;
+import com.kiro.kiro_backend.core.identity.domain.aggregate.PublicProfile;
+import com.kiro.kiro_backend.core.identity.domain.aggregate.UserPresence;
+import com.kiro.kiro_backend.core.identity.domain.repository.ProfileRepository;
+import com.kiro.kiro_backend.core.identity.domain.repository.UserPresenceRepository;
+import com.kiro.kiro_backend.core.identity.domain.service.UserPresenceIdTranslator;
+import com.kiro.kiro_backend.core.identity.domain.vo.PresenceId;
+import com.kiro.kiro_backend.core.messaging.domain.aggregate.DirectChatInfo;
+import com.kiro.kiro_backend.core.messaging.domain.aggregate.DirectChatInfoBuilderForConversation;
+import com.kiro.kiro_backend.core.messaging.domain.aggregate.GroupChatInfo;
+import com.kiro.kiro_backend.core.messaging.domain.aggregate.GroupChatInfoBuilderForConversation;
+import com.kiro.kiro_backend.core.messaging.domain.aggregate.Message;
+import com.kiro.kiro_backend.core.messaging.domain.repository.MessageRepository;
+import com.kiro.kiro_backend.core.social.domain.vo.FriendshipStatus;
+
+import org.springframework.data.domain.Page;
+
+import jakarta.persistence.EntityNotFoundException;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
+
+@AntiDomainService
+@Log4j2
+@RequiredArgsConstructor
+public class ConversationReader {
+
+  private final ParticipantRepository participantRepository;
+  private final ProfileRepository profileRepository;
+  private final ConversationRepository conversationRepository;
+  private final MessageRepository messageRepository;
+  private final GroupRepository groupRepository;
+  private final UserConnectionResolver connectionResolver;
+  private final UserPresenceIdTranslator presenceIdTranslator;
+  private final UserPresenceRepository userPresenceRepository;
+
+  public Conversation getConversation(User currentUser, User targetUser) {
+    return conversationRepository.getOneToOne(currentUser, targetUser)
+        .orElseThrow(() -> new ResourceNotFoundException());
+  }
+
+  /**
+   * Most of this is relate more of technical the domain
+   */
+  public UserChatList buildUserChatList(Page<UserConversation> userConversations, User currentUser) {
+    List<UserConversation> conversationList = userConversations.getContent();
+
+    // Query for message and build lookup
+    List<Message> lastMessage = messageRepository.getLastMessageByConversation(conversationList);
+
+    // Query and build lookup for unreadCount message in conversation;
+
+    // Count number of unread message in conversation
+    List<ConversationUnreadMessageCount> unreadCountByConversation = messageRepository
+        .getUnreadCount(userConversations.getContent());
+
+    List<UserConversation> groupConversations = conversationList.stream()
+        .filter(UserConversation::isGroup)
+        .toList();
+
+    List<UserConversation> directConversations = conversationList.stream()
+        .filter(UserConversation::isOneToOne)
+        .toList();
+
+    // Query and convert to lookup table
+    List<GroupChatInfo> groupMetadata = conversationRepository
+        .getGroupConversationMetadataByIds(groupConversations);
+
+    List<DirectChatInfo> directMetadata = conversationRepository
+        .getDirectConversationMetadataByIds(directConversations, currentUser.getDbId());
+
+    return UserChatList.create(lastMessage, userConversations, unreadCountByConversation,
+        groupMetadata, directMetadata);
+  }
+
+  public GroupChatInfo getGroupInfo(Conversation conversation, User currentUser) {
+    ParticipantCount count = participantRepository.countConversationMember(conversation);
+    GroupProfile groupProfile = groupRepository.getByConversationId(conversation.getId())
+        .orElseThrow(EntityNotFoundException::new);
+    return GroupChatInfoBuilderForConversation.groupChatInfo()
+        .conversation(conversation)
+        .groupProfile(groupProfile)
+        .participantCount(count)
+        .build();
+
+  }
+
+  public DirectChatInfo getConversationInfo(Conversation conversation, User currentUser) {
+
+    Participant recipient = participantRepository.getTargetMessagingParticipantInDirectConversation(currentUser,
+        conversation);
+    UserPresence targetMessagingUserPresence = userPresenceRepository
+        .getStatus(presenceIdTranslator.toPresenceId(recipient.getUserId()));
+
+    PublicProfile recipientProfile = profileRepository.findPublicProfileById(recipient.getUserId());
+
+    FriendshipStatus friendshipStatus = connectionResolver.aggreateConnection(currentUser.getDbId(),
+        recipient.getUserId());
+    recipientProfile.setConnectionStatus(friendshipStatus);
+
+    return DirectChatInfoBuilderForConversation.directChatInfo()
+        .conversation(conversation)
+        .recipientProfile(recipientProfile)
+        .status(targetMessagingUserPresence.getStatus())
+        .lastSeen(targetMessagingUserPresence.getLastSeen())
+        .build();
+
+  }
+
+  public Optional<Chat> getChatInfo(Conversation conversation, User currentUser) {
+    UnreadCount unreadCount = messageRepository.countUnreadForConversation(conversation.getId(),
+        conversation.getLastMessageId());
+
+    // New conversation will not exist message
+    Message lastMessage = messageRepository.getById(conversation.getLastMessageId())
+        .orElse(null);
+
+    // Base on type of conversation return appropriate information of chat
+    if (conversation.isDirectMessaging()) {
+      DirectChatInfo chatInfo = getConversationInfo(conversation, currentUser);
+      return Optional.ofNullable(DirectChatBuilder.chat()
+          .conversation(conversation)
+          .unreadCount(unreadCount)
+          .lastMessage(lastMessage)
+          .directMetadata(chatInfo)
+          .build());
+
+    } else {
+
+      GroupChatInfo chatInfo = getGroupInfo(conversation, currentUser);
+      return Optional.ofNullable(GroupChatBuilder.chat()
+          .conversation(conversation)
+          .unreadCount(unreadCount)
+          .lastMessage(lastMessage)
+          .groupMetadata(chatInfo)
+          .build());
+    }
+  }
+
+  public GroupChatInfo getConversationInfo(Conversation conversation, GroupProfile groupProfile) {
+    ParticipantCount participantCount = participantRepository.countConversationMember(conversation);
+    return GroupChatInfoBuilderForConversation.groupChatInfo()
+        .conversation(conversation)
+        .groupProfile(groupProfile)
+        .participantCount(participantCount)
+        .build();
+  }
+
+}

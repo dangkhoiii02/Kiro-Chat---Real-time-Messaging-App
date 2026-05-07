@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="64dp"
+    android:paddingHorizontal="16dp"
+    android:background="@color/surface_card"
+    android:clickable="true"
+    android:focusable="true">
+
+    <ImageView
+        android:id="@+id/iv_avatar"
+        android:layout_width="44dp"
+        android:layout_height="44dp"
+        android:scaleType="centerCrop"
+        android:background="@drawable/bg_avatar"
+        android:src="@drawable/ic_avatar_placeholder"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"/>
+
+    <TextView
+        android:id="@+id/tv_name"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:textSize="15sp"
+        android:textStyle="bold"
+        android:textColor="@color/text_primary"
+        android:maxLines="1"
+        android:ellipsize="end"
+        app:layout_constraintTop_toTopOf="@id/iv_avatar"
+        app:layout_constraintStart_toEndOf="@id/iv_avatar"
+        app:layout_constraintEnd_toStartOf="@id/btn_secondary_action"
+        android:layout_marginStart="12dp"/>
+
+    <TextView
+        android:id="@+id/tv_username"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:textSize="12sp"
+        android:textColor="@color/text_secondary"
+        android:maxLines="1"
+        android:ellipsize="end"
+        app:layout_constraintTop_toBottomOf="@id/tv_name"
+        app:layout_constraintStart_toEndOf="@id/iv_avatar"
+        app:layout_constraintEnd_toStartOf="@id/btn_secondary_action"
+        android:layout_marginStart="12dp"
+        android:layout_marginTop="2dp"/>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btn_secondary_action"
+        style="@style/Widget.MaterialComponents.Button.TextButton"
+        android:layout_width="wrap_content"
+        android:layout_height="36dp"
+        android:minWidth="0dp"
+        android:paddingHorizontal="10dp"
+        android:text="Từ chối"
+        android:textSize="12sp"
+        android:textColor="@color/text_secondary"
+        android:visibility="gone"
+        app:cornerRadius="18dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/btn_action"/>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btn_action"
+        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+        android:layout_width="wrap_content"
+        android:layout_height="36dp"
+        android:minWidth="0dp"
+        android:paddingHorizontal="12dp"
+        android:text="Kết bạn"
+        android:textSize="12sp"
+        android:visibility="gone"
+        android:textColor="@color/brand_primary"
+        app:strokeColor="@color/brand_primary"
+        app:cornerRadius="18dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

@@ -1,0 +1,98 @@
+/*
+ * Copyright 2026 trung-kieen
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.kiro.kiro_backend.common.validation.infrastructure.primary.problem.problem;
+
+import java.time.Instant;
+
+public class AuthenticationProblemDetail extends AbstractProblemDetail {
+  private final String traceId;
+  private final String requestId;
+  private final String timestamp;
+  private final String errorCode;
+
+  private AuthenticationProblemDetail(Builder builder) {
+    super(
+        "/problems/unauthorized", // Use the docs website domain as prefix
+        "Authentication Failed",
+        401,
+        builder.detail,
+        builder.instance);
+    this.traceId = builder.traceId;
+    this.requestId = builder.requestId;
+    this.timestamp = builder.timestamp;
+    this.errorCode = builder.errorCode;
+  }
+
+  // Getters for extension fields
+  public String getTraceId() {
+    return traceId;
+  }
+
+  public String getRequestId() {
+    return requestId;
+  }
+
+  public String getTimestamp() {
+    return timestamp;
+  }
+
+  public String getErrorCode() {
+    return errorCode;
+  }
+
+  public static Builder builder(String detail, String instance) {
+    return new Builder(detail, instance);
+  }
+
+  public static class Builder {
+    private final String detail;
+    private final String instance;
+    private String traceId;
+    private String requestId;
+    private String timestamp = Instant.now().toString();
+    private String errorCode = "AUTH_001";
+
+    private Builder(String detail, String instance) {
+      this.detail = detail;
+      this.instance = instance;
+    }
+
+    public Builder traceId(String traceId) {
+      this.traceId = traceId;
+      return this;
+    }
+
+    public Builder requestId(String requestId) {
+      this.requestId = requestId;
+      return this;
+    }
+
+    public Builder timestamp(String timestamp) {
+      this.timestamp = timestamp;
+      return this;
+    }
+
+    public Builder errorCode(String errorCode) {
+      this.errorCode = errorCode;
+      return this;
+    }
+
+    public AuthenticationProblemDetail build() {
+      return new AuthenticationProblemDetail(this);
+    }
+  }
+}

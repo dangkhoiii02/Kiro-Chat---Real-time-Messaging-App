@@ -1,0 +1,200 @@
+<!--
+ Copyright 2026 trung-kieen
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
+
+<main id="main-content" class="flex h-[calc(100vh-4rem)]">
+  <section id="create-group-panel" class="flex-1 bg-white flex flex-col">
+
+    <!-- Header -->
+    <div class="border-b border-neutral-200 p-4 shrink-0">
+      <div class="flex items-center space-x-3">
+        <button (click)="onBack()" class="p-2 hover:bg-neutral-100 rounded-lg" aria-label="Back">
+          <i class="fa-solid fa-arrow-left text-neutral-600"></i>
+        </button>
+        <h2 class="text-xl text-black">Tạo nhóm mới</h2>
+      </div>
+    </div>
+
+    <!-- Form -->
+    <form [formGroup]="groupForm" (ngSubmit)="onCreateGroup()" class="flex-1 overflow-y-auto">
+      <div class="p-6 space-y-6 max-w-2xl mx-auto">
+
+        <!-- Avatar Upload -->
+        <div class="flex items-center gap-4">
+          <button
+            type="button"
+            class="w-16 h-16 bg-neutral-100 rounded-full flex items-center justify-center border-2 border-dashed border-neutral-300 hover:border-neutral-400 shrink-0"
+            (click)="fileInput.click()">
+            @if (!imagePreviewUrl()) {
+              <i class="fa-solid fa-camera text-neutral-400 text-lg"></i>
+            } @else {
+              <img [src]="imagePreviewUrl()" alt="Avatar" class="w-full h-full rounded-full object-cover">
+            }
+          </button>
+          <input type="file" #fileInput (change)="onAvatarSelected($event)" accept="image/*" class="hidden">
+
+          <!-- Group Name -->
+          <div class="flex-1">
+            <input
+              id="groupName"
+              type="text"
+              placeholder="Tên nhóm..."
+              formControlName="groupName"
+              class="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-500 text-sm"
+              [class.border-neutral-200]="groupNameControl.valid || groupNameControl.untouched"
+              [class.border-red-300]="groupNameControl.touched && groupNameControl.invalid">
+            @if (groupNameControl.touched && groupNameControl.invalid) {
+              <div class="mt-1">
+                @if (groupNameControl.hasError('required')) {
+                  <p class="text-xs text-red-500">Tên nhóm là bắt buộc</p>
+                }
+                @if (groupNameControl.hasError('minlength')) {
+                  <p class="text-xs text-red-500">Tên nhóm tối thiểu 3 ký tự</p>
+                }
+                @if (groupNameControl.hasError('maxlength')) {
+                  <p class="text-xs text-red-500">Tên nhóm tối đa 50 ký tự</p>
+                }
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Selected Members chips -->
+        @if (selectedCount() > 0) {
+          <div>
+            <p class="text-xs text-neutral-500 mb-2">Đã chọn ({{ selectedCount() }})</p>
+            <div class="flex flex-wrap gap-2">
+              @for (member of selectedFriends(); track member.userId) {
+                <div class="flex items-center gap-1.5 bg-neutral-100 rounded-full pl-1 pr-2 py-1">
+                  <img [src]="member.imageUrl || 'https://api.dicebear.com/7.x/notionists/svg?seed=' + member.userId"
+                       [alt]="member.fullname" class="w-6 h-6 rounded-full object-cover">
+                  <span class="text-xs text-neutral-700">{{ member.fullname }}</span>
+                  <button type="button" (click)="removeMember(member.userId)"
+                    class="text-neutral-400 hover:text-red-500 ml-0.5">
+                    <i class="fa-solid fa-times text-xs"></i>
+                  </button>
+                </div>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- Search -->
+        <div class="relative">
+          <input
+            type="text"
+            placeholder="Tìm bạn bè..."
+            [formControl]="searchControl"
+            class="w-full pl-9 pr-4 py-2.5 border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-400 text-sm">
+          <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 text-sm"></i>
+        </div>
+
+        <!-- Friend list with checkboxes -->
+        <div>
+          <p class="text-xs text-neutral-500 mb-2">Bạn bè</p>
+
+          @if (friendsLoading()) {
+            <div class="flex justify-center py-6">
+              <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-neutral-500"></div>
+            </div>
+          } @else if (friendsError()) {
+            <div class="flex items-center gap-2 text-red-500 text-sm py-3 px-3 bg-red-50 rounded-lg">
+              <i class="fa-solid fa-circle-exclamation shrink-0"></i>
+              <span>{{ friendsError() }}</span>
+            </div>
+          } @else {
+            <div class="space-y-1 max-h-72 overflow-y-auto">
+              @for (friend of filteredFriends(); track friend.userId) {
+                <label
+                  class="flex items-center gap-3 p-3 rounded-lg hover:bg-neutral-50 cursor-pointer select-none"
+                  [class.bg-neutral-50]="isMemberSelected(friend)">
+                  <!-- Checkbox -->
+                  <div class="shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-colors"
+                    [class.border-neutral-600]="isMemberSelected(friend)"
+                    [class.bg-neutral-600]="isMemberSelected(friend)"
+                    [class.border-neutral-300]="!isMemberSelected(friend)">
+                    @if (isMemberSelected(friend)) {
+                      <i class="fa-solid fa-check text-white text-xs"></i>
+                    }
+                  </div>
+                  <!-- Avatar -->
+                  <img
+                    [src]="friend.imageUrl || 'https://api.dicebear.com/7.x/notionists/svg?seed=' + friend.userId"
+                    [alt]="friend.fullname"
+                    class="w-9 h-9 rounded-full object-cover shrink-0">
+                  <!-- Info -->
+                  <div class="flex-1 min-w-0">
+                    <p class="text-sm text-neutral-900 truncate">{{ friend.fullname }}</p>
+                    <p class="text-xs text-neutral-400 truncate">{{ friend.username }}</p>
+                  </div>
+                  <!-- Hidden input for click handling -->
+                  <input type="checkbox" class="hidden"
+                    [checked]="isMemberSelected(friend)"
+                    (change)="isMemberSelected(friend) ? removeMember(friend.userId) : addMember(friend)">
+                </label>
+              } @empty {
+                <div class="text-center py-8 text-neutral-400">
+                  <i class="fa-solid fa-user-group text-2xl mb-2 block"></i>
+                  <p class="text-sm">
+                    @if (searchControl.value) {
+                      Không tìm thấy "{{ searchControl.value }}"
+                    } @else {
+                      Chưa có bạn bè nào
+                    }
+                  </p>
+                </div>
+              }
+            </div>
+          }
+        </div>
+
+        <!-- Validation error -->
+        @if (groupForm.touched && selectedCount() < 2) {
+          <p class="text-sm text-red-500">Cần chọn ít nhất 2 thành viên</p>
+        }
+
+        <!-- Server Error -->
+        @if (serverError()) {
+          <div class="p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
+            <i class="fa-solid fa-circle-exclamation text-red-500 mt-0.5 shrink-0"></i>
+            <div>
+              <p class="text-sm font-medium text-red-800">Lỗi tạo nhóm</p>
+              <p class="text-sm text-red-700 mt-0.5">{{ serverError() }}</p>
+            </div>
+          </div>
+        }
+
+      </div>
+
+      <!-- Footer -->
+      <div class="border-t border-neutral-200 px-6 py-4 shrink-0">
+        <div class="flex items-center justify-end gap-3 max-w-2xl mx-auto">
+          <button type="button" (click)="onCancel()"
+            class="px-5 py-2 text-sm text-neutral-600 border border-neutral-200 rounded-lg hover:bg-neutral-50">
+            Huỷ
+          </button>
+          <button
+            type="submit"
+            [disabled]="groupForm.invalid || selectedCount() < 2"
+            class="px-5 py-2 text-sm bg-neutral-700 text-white rounded-lg hover:bg-neutral-800 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2">
+            <i class="fa-solid fa-users"></i>
+            Tạo nhóm ({{ selectedCount() }})
+          </button>
+        </div>
+      </div>
+    </form>
+
+  </section>
+</main>

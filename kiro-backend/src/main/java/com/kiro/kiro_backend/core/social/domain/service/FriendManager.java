@@ -1,0 +1,197 @@
+/*
+ * Copyright 2026 trung-kieen
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.kiro.kiro_backend.core.social.domain.service;
+
+import java.util.List;
+
+import com.kiro.kiro_backend.common.authentication.domain.KeycloakPrincipal;
+import com.kiro.kiro_backend.common.ddd.infrastructure.stereotype.DomainService;
+import com.kiro.kiro_backend.common.user.domain.aggregate.User;
+import com.kiro.kiro_backend.common.user.domain.repository.UserRepository;
+import com.kiro.kiro_backend.common.user.domain.vo.PublicId;
+import com.kiro.kiro_backend.common.user.domain.vo.UserDBId;
+import com.kiro.kiro_backend.common.validation.domain.DuplicateResourceException;
+import com.kiro.kiro_backend.core.discovery.domain.repository.UserConnectionResolver;
+import com.kiro.kiro_backend.core.identity.domain.aggregate.UserSummary;
+import com.kiro.kiro_backend.core.identity.domain.repository.IdentityUserRepository;
+import com.kiro.kiro_backend.core.social.domain.aggregate.ContactConnection;
+import com.kiro.kiro_backend.core.social.domain.aggregate.ContactRequest;
+import com.kiro.kiro_backend.core.social.domain.aggregate.ContactRequestList;
+import com.kiro.kiro_backend.core.social.domain.aggregate.ContactRequestListBuilder;
+import com.kiro.kiro_backend.core.social.domain.aggregate.CreateContactRequest;
+import com.kiro.kiro_backend.core.social.domain.repository.ContactRepository;
+import com.kiro.kiro_backend.core.social.domain.repository.ContactRequestRepository;
+import com.kiro.kiro_backend.core.social.domain.vo.FriendshipStatus;
+import com.kiro.kiro_backend.core.social.infrastructure.secondary.entity.FriendRequestStatus;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.transaction.annotation.Transactional;
+
+import jakarta.persistence.EntityNotFoundException;
+import lombok.RequiredArgsConstructor;
+
+@DomainService
+@RequiredArgsConstructor
+public class FriendManager {
+  private final UserRepository userRepository;
+  private final IdentityUserRepository identityUserRepository;
+  private final ContactRepository contactRepository;
+  private final ContactRequestRepository contactRequestRepository;
+  private final KeycloakPrincipal keycloakPrincipal;
+  private final UserConnectionResolver connectionResolver;
+
+  @Transactional(readOnly = false)
+  public ContactRequest sendRequest(CreateContactRequest request) {
+    // TODO: not allow bloceked user to send request
+    User sender = userRepository.getByUsername(request.getSenderUsername())
+        .orElseThrow(() -> new EntityNotFoundException("Not found sender information"));
+    User receiver = userRepository.getByPublicId(request.getReceiverPublicId())
+        .orElseThrow(() -> new EntityNotFoundException("Not found target contact information"));
+
+    // Not allow to request to friend
+    if (contactRepository.existsContactConnection(sender, receiver)) {
+      throw new DuplicateResourceException("Already friend", "friend conntection");
+    }
+
+    if (sender.equals(receiver)) {
+      // TODO: create Bad_request type for this error
+      throw new IllegalArgumentException("Unable to send request to yourself");
+    }
+
+    // Not allow to duplicate the request
+    if (contactRequestRepository.existsPendingRequest(sender, receiver)) {
+      throw new DuplicateResourceException("Request already sent", "friend request");
+    }
+
+    ContactRequest contactRequest = ContactRequest.builderRequest(sender, receiver);
+    contactRequest.assertManadatoryField();
+    contactRequest.initManadatoryField();
+
+    ContactRequest savedRequest = contactRequestRepository.save(contactRequest);
+    return savedRequest;
+
+  }
+
+  private ContactConnection acceptRequest(ContactRequest request, UserDBId currentUserId, UserDBId friendUserId) {
+    if (!request.getReceiverUserId().equals(currentUserId)) {
+      throw new IllegalAccessError("Not permited to accept this request");
+    }
+
+    request.setStatus(FriendRequestStatus.ACCEPTED);
+
+    contactRequestRepository.save(request);
+    // Create contact connection
+
+    ContactConnection contact = ContactConnection.createConnection(currentUserId, friendUserId);
+    ContactConnection savedContacted = contactRepository.save(contact);
+    // TODO: Send notification accept request
+
+    return savedContacted;
+  }
+
+  @Transactional(readOnly = false)
+  public ContactConnection acceptRequestFromUser(PublicId friendId) {
+
+    User friendUser = userRepository.getByPublicId(friendId)
+        .orElseThrow(() -> new EntityNotFoundException("Not found request user information"));
+    User currentUser = userRepository.getByUsername(keycloakPrincipal.getUsername())
+        .orElseThrow(() -> new EntityNotFoundException());
+
+    ContactRequest request = contactRequestRepository.getPendingRequest(friendUser.getDbId(), currentUser.getDbId())
+        .orElseThrow(() -> new EntityNotFoundException("Not found contact request"));
+    return acceptRequest(request, currentUser.getDbId(), friendUser.getDbId());
+  }
+
+  @Transactional(readOnly = false)
+  public ContactConnection acceptRequestForRequest(PublicId requestId) {
+
+    ContactRequest request = contactRequestRepository.getByPublicId(requestId)
+        .orElseThrow(() -> new EntityNotFoundException("Not found contact request"));
+
+    return acceptRequest(request, request.getRequestUserId(), request.getReceiverUserId());
+  }
+
+  private void rejectRequest(ContactRequest request, UserDBId currentUserId) {
+    if (!currentUserId.equals(request.getReceiverUserId())) {
+      throw new IllegalAccessError("Not permitted to deny this request");
+    }
+    request.setStatus(FriendRequestStatus.DECLINED);
+
+    contactRequestRepository.save(request);
+  }
+
+  public void rejectRequestFromUser(PublicId friendId) {
+    User friendUser = userRepository.getByPublicId(friendId)
+        .orElseThrow(() -> new EntityNotFoundException("Not found user send this request"));
+    User currentUser = userRepository.getByUsername(keycloakPrincipal.getUsername())
+        .orElseThrow(() -> new EntityNotFoundException());
+
+    ContactRequest request = contactRequestRepository.getPendingRequest(friendUser.getDbId(), currentUser.getDbId())
+        .orElseThrow(() -> new EntityNotFoundException("Not found contact request"));
+
+    rejectRequest(request, currentUser.getDbId());
+  }
+
+  public void rejectRequestForRequest(PublicId requestId) {
+    User currentUser = userRepository.getByUsername(keycloakPrincipal.getUsername())
+        .orElseThrow(() -> new EntityNotFoundException());
+    ContactRequest request = contactRequestRepository.getByPublicId(requestId)
+        .orElseThrow(() -> new EntityNotFoundException("Not found contact request"));
+    rejectRequest(request, currentUser.getDbId());
+  }
+
+  @Transactional(readOnly = false)
+  public void unfriend(PublicId friendId) {
+    User friendUser = userRepository.getByPublicId(friendId)
+        .orElseThrow(() -> new EntityNotFoundException("Not found friend information"));
+    User currentUser = userRepository.getByUsername(keycloakPrincipal.getUsername())
+        .orElseThrow(() -> new EntityNotFoundException());
+
+    contactRepository.removeContact(currentUser.getDbId(), friendUser.getDbId());
+
+    contactRequestRepository.deleteRequestBetween(currentUser.getDbId(), friendUser.getDbId());
+  }
+
+  @Transactional(readOnly = false)
+  public FriendshipStatus unsendRequest(PublicId targetId) {
+    User friendUser = userRepository.getByPublicId(targetId)
+        .orElseThrow(() -> new EntityNotFoundException("Not found friend information"));
+    User currentUser = userRepository.getByUsername(keycloakPrincipal.getUsername())
+        .orElseThrow(() -> new EntityNotFoundException());
+
+    ContactRequest request = contactRequestRepository.getPendingRequest(currentUser.getDbId(), friendUser.getDbId())
+        .orElseThrow(() -> new EntityNotFoundException("Friend request not found"));
+    contactRequestRepository.delete(request);
+    return connectionResolver.aggreateConnection(currentUser, friendUser);
+  }
+
+  public ContactRequestList viewListContactRequest(Pageable pageable) {
+    User user = userRepository.getByUsername(keycloakPrincipal.getUsername())
+        .orElseThrow(() -> new EntityNotFoundException());
+    ;
+    Page<ContactRequest> requests = contactRequestRepository.getAllPendingByReceiver(user.getDbId(), pageable);
+    List<UserDBId> userIds = requests.getContent().stream().map(ContactRequest::getRequestUserId).toList();
+    List<UserSummary> userInfomations = identityUserRepository.getUserSummary(userIds);
+
+    return ContactRequestListBuilder.contactRequestList()
+        .contacts(requests)
+        .userSummaries(userInfomations)
+        .build();
+  }
+
+}

@@ -1,0 +1,86 @@
+services:
+  kiro-db:
+    container_name: kiro-db
+    image: postgres:18.1
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      PGDATA: /var/lib/postgresql/data
+      POSTGRES_DB: kirodb
+    volumes:
+      - kiro-db:/data/postgres
+      ## Init script sql
+      # - ./backups:/backups
+      # - ./backups/backup.sql:/docker-entrypoint-initdb.d/init.sql
+      ## Entry point to access via script
+      # - ./scripts/postgres-entrypoint.sh:/postgres-entrypoint.sh
+      # - ./scripts/postgres-entrypoint.sh:/docker-entrypoint-initdb.d/initdb.sh
+
+    # entrypoint: ["postgres-entrypoint.sh"]
+
+    restart: "no"
+    ports:
+      - 5432:5432
+    networks:
+      - kiro-net
+
+  kiro-livekit:
+    container_name: kiro-livekit
+    image: livekit/livekit-server:latest
+    command: ["--config", "/etc/livekit.yaml"]
+    ports:
+      - 7880:7880
+      - 7881:7881
+      - 7882:7882/udp
+    volumes:
+      - ./livekit.yaml:/etc/livekit.yaml
+    restart: "no"
+    networks:
+      - kiro-net
+
+  kiro-auth:
+    container_name: kiro-auth
+    image: quay.io/keycloak/keycloak:26.0.2
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    command: ["start-dev", "--import-realm"]
+    volumes:
+      - ./keycloak-data/import:/opt/keycloak/data/import
+    ports:
+      - 9093:8080
+    networks:
+      - kiro-net
+
+  kiro-mq:
+    container_name: kiro-mq
+    image: rabbitmq:4.0.2-management
+    environment:
+      - RABBITMQ_DEFAULT_USER=admin
+      - RABBITMQ_DEFAULT_PASS=admin
+    ports:
+      - 5672:5672
+      - 15672:15672
+      - 61613:61613
+    networks:
+      - kiro-net
+
+  kiro-minio:
+    container_name: kiro-minio
+    image: minio/minio
+    ports:
+      - 9000:9000
+      - 9001:9001
+    environment:
+      MINIO_ROOT_USER: "admin"
+      MINIO_ROOT_PASSWORD: "password"
+    command: server /data --console-address ":9001"
+    networks:
+      - kiro-net
+
+networks:
+  kiro-net:
+    driver: bridge
+
+volumes:
+  kiro-db:

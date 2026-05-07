@@ -1,0 +1,123 @@
+<!--
+ Copyright 2026 trung-kieen
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
+
+<main id="main-content" class="flex h-[calc(100vh-4rem)]">
+  <section id="notifications-panel" class="flex-1 bg-white flex flex-col">
+    <div class="border-b border-neutral-200 p-6">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+          <button class="p-2 hover:bg-neutral-100 rounded-lg" aria-label="Back">
+            <i class="fa-solid fa-arrow-left text-neutral-600"></i>
+          </button>
+          <h2 class="text-xl text-black">Notifications</h2>
+        </div>
+        <button class="text-sm text-neutral-600 hover:text-neutral-800">
+          Mark all as read
+        </button>
+      </div>
+    </div>
+
+    <div class="flex-1 overflow-y-auto">
+      <div class="space-y-1">
+        <div class="flex items-start space-x-3 p-4 hover:bg-neutral-50 cursor-pointer border-l-4 border-neutral-500">
+          <img src="https://api.dicebear.com/7.x/notionists/svg?scale=200&seed=2345" alt="Emily Davis" class="w-10 h-10 rounded-full">
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center justify-between">
+              <p class="text-sm text-neutral-900">Emily Davis sent you a message</p>
+              <div class="flex items-center space-x-2">
+                <p class="text-xs text-neutral-500">5 min ago</p>
+                <div class="w-2 h-2 bg-neutral-500 rounded-full"></div>
+              </div>
+            </div>
+            <p class="text-sm text-neutral-600 mt-1">Can we schedule a meeting for tomorrow?</p>
+          </div>
+        </div>
+
+        <div class="flex items-start space-x-3 p-4 hover:bg-neutral-50 cursor-pointer border-l-4 border-neutral-500">
+          <img src="https://api.dicebear.com/7.x/notionists/svg?scale=200&seed=8901" alt="John Smith" class="w-10 h-10 rounded-full">
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center justify-between">
+              <p class="text-sm text-neutral-900">John Smith sent you a message</p>
+              <div class="flex items-center space-x-2">
+                <p class="text-xs text-neutral-500">12 min ago</p>
+                <div class="w-2 h-2 bg-neutral-500 rounded-full"></div>
+              </div>
+            </div>
+            <p class="text-sm text-neutral-600 mt-1">Hey, how are you doing today?</p>
+          </div>
+        </div>
+
+        <div class="flex items-start space-x-3 p-4 hover:bg-neutral-50 cursor-pointer border-l-4 border-transparent">
+          <div class="w-10 h-10 bg-neutral-500 rounded-full flex items-center justify-center">
+            <i class="fa-solid fa-users text-white text-sm"></i>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center justify-between">
+              <p class="text-sm text-neutral-700">You were added to Marketing Team</p>
+              <p class="text-xs text-neutral-500">1 hr ago</p>
+            </div>
+            <p class="text-sm text-neutral-500 mt-1">Mike added you to the group</p>
+          </div>
+        </div>
+
+        <div class="flex items-start space-x-3 p-4 hover:bg-neutral-50 cursor-pointer border-l-4 border-transparent">
+          <img src="https://api.dicebear.com/7.x/notionists/svg?scale=200&seed=4567" alt="Sarah Johnson" class="w-10 h-10 rounded-full">
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center justify-between">
+              <p class="text-sm text-neutral-700">Sarah Johnson sent you a message</p>
+              <p class="text-xs text-neutral-500">2 hrs ago</p>
+            </div>
+            <p class="text-sm text-neutral-500 mt-1">Thanks for the update! 👍</p>
+          </div>
+        </div>
+
+        <div class="flex items-start space-x-3 p-4 hover:bg-neutral-50 cursor-pointer border-l-4 border-transparent">
+          <div class="w-10 h-10 bg-neutral-500 rounded-full flex items-center justify-center">
+            <i class="fa-solid fa-user-plus text-white text-sm"></i>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center justify-between">
+              <p class="text-sm text-neutral-700">Alex Chen sent you a friend request</p>
+              <p class="text-xs text-neutral-500">3 hrs ago</p>
+            </div>
+            <p class="text-sm text-neutral-500 mt-1">Accept or decline the request</p>
+          </div>
+        </div>
+
+        <div class="flex items-start space-x-3 p-4 hover:bg-neutral-50 cursor-pointer border-l-4 border-transparent">
+          <div class="w-10 h-10 bg-neutral-500 rounded-full flex items-center justify-center">
+            <i class="fa-solid fa-bell text-white text-sm"></i>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center justify-between">
+              <p class="text-sm text-neutral-700">System notification</p>
+              <p class="text-xs text-neutral-500">1 day ago</p>
+            </div>
+            <p class="text-sm text-neutral-500 mt-1">Your account settings have been updated</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="text-center py-12">
+        <div class="w-16 h-16 bg-neutral-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <i class="fa-solid fa-bell text-neutral-400 text-xl"></i>
+        </div>
+        <p class="text-neutral-500 text-sm">You're all caught up!</p>
+        <p class="text-neutral-400 text-xs mt-1">No more notifications to show</p>
+      </div>
+    </div>
+  </section>
+</main>

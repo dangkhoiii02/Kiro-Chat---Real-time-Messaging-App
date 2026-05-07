@@ -1,0 +1,70 @@
+<!--
+ Copyright 2026 trung-kieen
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
+
+<!--
+  App Sidebar for navigation
+  Mobile as drawer overlay, Desktop as fixed sidebar
+-->
+<aside class="h-full bg-white border-r border-neutral-200 flex flex-col">
+
+  <!-- Navigation menu -->
+  <nav class="pt-20 flex-1 px-4 overflow-y-auto">
+    <ul class="space-y-1">
+      @for (item of menuItems(); track item.route) {
+        <li>
+          <a
+            [routerLink]="item.route"
+            routerLinkActive="bg-neutral-100 text-neutral-900"
+            [routerLinkActiveOptions]="{ exact: false }"
+            class="flex items-center space-x-3 px-3 py-2.5 rounded-lg
+                   hover:bg-neutral-50 cursor-pointer transition-colors
+                   text-neutral-700 group"
+          >
+            <i
+              class="fa-solid {{ item.icon }} text-neutral-600 w-5 text-center
+                     group-hover:text-neutral-700"
+            ></i>
+            <span class="flex-1 text-sm font-medium">{{ item.label }}</span>
+
+            @if (item.badge) {
+              <span
+                [class]="'text-white text-xs rounded-full px-2 py-0.5 font-medium min-w-[20px] text-center ' +
+                         (item.badgeColor === 'accent' ? 'bg-neutral-500' : 'bg-neutral-500')">
+                {{ item.badge }}
+              </span>
+            }
+          </a>
+        </li>
+      }
+    </ul>
+  </nav>
+
+  <!-- Logout button -->
+  <div class="flex-shrink-0 p-4 border-t border-neutral-200">
+    <button
+      (click)="onLogout()"
+      class="flex items-center space-x-3 px-3 py-2.5 rounded-lg
+             hover:bg-red-50 w-full transition-colors group"
+    >
+      <i class="fa-solid fa-sign-out-alt text-neutral-600 w-5 text-center
+                group-hover:text-red-600"></i>
+      <span class="text-neutral-700 text-sm font-medium group-hover:text-red-600">
+        Logout
+      </span>
+    </button>
+  </div>
+
+</aside>

@@ -1,0 +1,17 @@
+import io.livekit.server.AccessToken;
+import io.livekit.server.RoomJoin;
+import io.livekit.server.RoomName;
+
+public class TestLiveKit {
+    public static void main(String[] args) {
+        try {
+            AccessToken token = new AccessToken("devkey", "secret");
+            token.setName("test");
+            token.setIdentity("test");
+            token.addGrants(new RoomJoin(true), new RoomName("room"));
+            System.out.println(token.toJwt());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+}

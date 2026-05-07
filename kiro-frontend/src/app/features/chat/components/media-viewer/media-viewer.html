@@ -1,0 +1,99 @@
+<!--
+ Copyright 2026 trung-kieen
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
+
+<main id="main-content" class="flex h-[calc(100vh-4rem)]">
+
+
+  <section id="media-viewer" class="flex-1 bg-black flex flex-col relative">
+    <div id="media-header" class="absolute top-0 left-0 right-0 z-10 p-4 bg-gradient-to-b from-black/50 to-transparent">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-4">
+          <button class="text-white hover:text-neutral-300 transition-colors">
+            <i class="fa-solid fa-arrow-left text-xl"></i>
+          </button>
+          <div class="flex items-center space-x-3">
+            <img src="https://api.dicebear.com/7.x/notionists/svg?scale=200&seed=9876" alt="Project Team"
+              class="w-8 h-8 rounded-full">
+            <div>
+              <h3 class="text-white text-sm">Project Team</h3>
+              <p class="text-neutral-300 text-xs">Oct 10, 2025 at 4:20 PM</p>
+            </div>
+          </div>
+        </div>
+        <button class="text-white hover:text-neutral-300 transition-colors">
+          <i class="fa-solid fa-times text-xl"></i>
+        </button>
+      </div>
+    </div>
+
+    <div id="media-content" class="flex-1 flex items-center justify-center relative">
+      <button
+        class="absolute left-4 top-1/2 transform -translate-y-1/2 z-10 w-12 h-12 bg-black/50 text-white rounded-full flex items-center justify-center hover:bg-black/70 transition-colors">
+        <i class="fa-solid fa-chevron-left"></i>
+      </button>
+
+      <div class="max-w-full max-h-full flex items-center justify-center">
+        <div class="bg-neutral-600 w-[600px] h-[400px] rounded-lg flex items-center justify-center">
+          <div class="text-center text-white">
+            <i class="fa-solid fa-image text-6xl mb-4 opacity-50"></i>
+            <p class="text-lg">Project Screenshot</p>
+            <p class="text-sm text-neutral-300 mt-2">Image Preview</p>
+          </div>
+        </div>
+      </div>
+
+      <button
+        class="absolute right-4 top-1/2 transform -translate-y-1/2 z-10 w-12 h-12 bg-black/50 text-white rounded-full flex items-center justify-center hover:bg-black/70 transition-colors">
+        <i class="fa-solid fa-chevron-right"></i>
+      </button>
+    </div>
+
+    <div id="media-footer"
+      class="absolute bottom-0 left-0 right-0 z-10 p-4 bg-gradient-to-t from-black/50 to-transparent">
+      <div class="flex items-center justify-center space-x-4">
+        <button
+          class="w-10 h-10 bg-black/50 text-white rounded-full flex items-center justify-center hover:bg-black/70 transition-colors">
+          <i class="fa-solid fa-download"></i>
+        </button>
+        <button
+          class="w-10 h-10 bg-black/50 text-white rounded-full flex items-center justify-center hover:bg-black/70 transition-colors">
+          <i class="fa-solid fa-share"></i>
+        </button>
+        <button
+          class="w-10 h-10 bg-black/50 text-white rounded-full flex items-center justify-center hover:bg-black/70 transition-colors">
+          <i class="fa-solid fa-search-plus"></i>
+        </button>
+        <button
+          class="w-10 h-10 bg-black/50 text-white rounded-full flex items-center justify-center hover:bg-black/70 transition-colors">
+          <i class="fa-solid fa-search-minus"></i>
+        </button>
+      </div>
+
+      <div class="flex items-center justify-center mt-4">
+        <div class="flex space-x-2">
+          <div class="w-2 h-2 bg-white rounded-full"></div>
+          <div class="w-2 h-2 bg-white/50 rounded-full"></div>
+          <div class="w-2 h-2 bg-white/50 rounded-full"></div>
+          <div class="w-2 h-2 bg-white/50 rounded-full"></div>
+        </div>
+      </div>
+
+      <div class="text-center mt-2">
+        <p class="text-white text-sm">1 of 4</p>
+      </div>
+    </div>
+  </section>
+</main>

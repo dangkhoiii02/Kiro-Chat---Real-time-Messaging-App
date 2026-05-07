@@ -1,0 +1,100 @@
+/*
+ * Copyright 2026 trung-kieen
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.kiro.kiro_backend.core.social.infrastructure.secondary.repository;
+
+import java.util.List;
+import java.util.Optional;
+
+import com.kiro.kiro_backend.common.ddd.infrastructure.stereotype.SecondaryPort;
+import com.kiro.kiro_backend.common.user.domain.aggregate.User;
+import com.kiro.kiro_backend.common.user.domain.vo.PublicId;
+import com.kiro.kiro_backend.common.user.domain.vo.UserDBId;
+import com.kiro.kiro_backend.core.social.domain.aggregate.ContactRequest;
+import com.kiro.kiro_backend.core.social.domain.repository.ContactRequestRepository;
+import com.kiro.kiro_backend.core.social.infrastructure.secondary.entity.ContactRequestEntity;
+import com.kiro.kiro_backend.core.social.infrastructure.secondary.entity.FriendRequestStatus;
+import com.kiro.kiro_backend.core.social.infrastructure.secondary.mapper.ContactEntityMapper;
+import com.kiro.kiro_backend.core.social.infrastructure.secondary.specification.JpaContactRequestSpecification;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+
+import lombok.RequiredArgsConstructor;
+
+@SecondaryPort
+@RequiredArgsConstructor
+public class SpringDataContactRequestRepository implements ContactRequestRepository {
+  private final JpaContactRequestRepository repository;
+  private final ContactEntityMapper mapper;
+
+  @Override
+  public boolean existsPendingRequest(User a, User b) {
+    Specification<ContactRequestEntity> spec = JpaContactRequestSpecification.searchContactRequest(a.getDbId().value(),
+        b.getDbId().value());
+    List<ContactRequestEntity> requests = repository.findAll(spec);
+    for (ContactRequestEntity r : requests) {
+      if (r.getStatus() == FriendRequestStatus.PENDING) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  @Override
+
+  public ContactRequest save(ContactRequest contactRequest) {
+    ContactRequestEntity request = mapper.from(contactRequest);
+    return mapper.toDomain(repository.save(request));
+  }
+
+  @Override
+  public Page<ContactRequest> getAllPendingByReceiver(UserDBId dbId, Pageable pageable) {
+    Long requestUserId = dbId.value();
+    Specification<ContactRequestEntity> spec = JpaContactRequestSpecification.withReceiverId(requestUserId);
+    Page<ContactRequestEntity> contactEntities = repository.findAll(spec, pageable);
+    return mapper.toDomain(contactEntities);
+  }
+
+  @Override
+  public Optional<ContactRequest> getPendingRequest(UserDBId a, UserDBId b) {
+    return repository.findConnection(a.value(), b.value()).map(mapper::toDomain);
+  }
+
+  @Override
+  public Optional<ContactRequest> getByPublicId(PublicId publicId) {
+    return repository.findByPublicId(publicId.value()).map(mapper::toDomain);
+  }
+
+  @Override
+  public boolean existsAcceptedRequest(UserDBId a, UserDBId b) {
+    return repository.existsAcceptedRequest(a.value(), b.value());
+  }
+
+  @Override
+  public void deleteRequestBetween(UserDBId dbId, UserDBId dbId2) {
+    repository.deleteAllConnection(dbId.value(), dbId2.value());
+
+  }
+
+  @Override
+  public void delete(ContactRequest request) {
+    Long requestDBId = request.getId().value();
+    repository.deleteById(requestDBId);
+  }
+
+}

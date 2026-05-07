@@ -1,0 +1,135 @@
+<!--
+ Copyright 2026 trung-kieen
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
+
+<main id="main-content" class="flex h-[calc(100vh-4rem)]">
+  <section id="friend-requests-panel" class="flex-1 bg-white flex flex-col">
+    <!-- Header -->
+    <div class="p-6 border-b border-neutral-200">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-xl text-black">Friend Requests</h2>
+          <p class="text-neutral-500 mt-1">
+            Manage your friend requests and discover new connections
+          </p>
+        </div>
+      </div>
+
+      <div class="mt-6">
+        <div class="relative max-w-4xl m-auto">
+          <input
+            type="text"
+            placeholder="Search by username, email, or name..."
+            [value]="query()"
+            (input)="onSearchQueryChange($event)"
+            class="w-full pl-10 pr-4 py-3 border border-neutral-200 rounded-lg
+                   focus:outline-none focus:ring-2 focus:ring-neutral-500 text-base" />
+          <i class="fa-solid fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-400"></i>
+        </div>
+      </div>
+    </div>
+
+    <!-- Content -->
+    <div class="flex-1 overflow-y-auto p-6">
+      <div class="max-w-4xl m-auto">
+
+        <!-- Loading State -->
+        @if (isLoading()) {
+          <div class="flex justify-center items-center h-64">
+            <i class="fa-solid fa-spinner fa-spin text-2xl text-neutral-400"></i>
+          </div>
+        } @else {
+
+          <!-- Pending Requests -->
+          <div class="mb-8">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-lg text-black">Pending Requests</h3>
+              <span class="bg-neutral-100 text-neutral-600 px-2 py-1 rounded-full text-sm">
+                {{ filteredPending().length }} requests
+              </span>
+            </div>
+
+            @if (filteredPending().length > 0) {
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                @for (r of filteredPending(); track r.userId) {
+                  <app-friend-request-item
+                    [request]="r"
+                    (accept)="onAcceptRequest($event)"
+                    (decline)="onDeclineRequest($event)" />
+                }
+              </div>
+            } @else {
+              <p class="text-neutral-500 text-center py-8">No pending requests</p>
+            }
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <h3 class="text-lg text-black">Suggested Friends</h3>
+                <p class="text-sm text-neutral-500">Based on your network and activity</p>
+              </div>
+              <div class="flex items-center space-x-2">
+                <i class="fa-solid fa-robot text-neutral-400"></i>
+                <span class="text-sm text-neutral-500">AI Powered</span>
+              </div>
+            </div>
+
+            @if (filteredSuggestions().length > 0) {
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                @for (friend of filteredSuggestions(); track friend.userId) {
+                  <app-suggested-friend-item
+                    [friend]="friend"
+                    (addFriend)="onSendFriendRequest($event)" />
+                }
+              </div>
+            } @else {
+              <p class="text-neutral-500 text-center py-8">
+                No suggestions found
+              </p>
+            }
+          </div>
+        }
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- Toast Notification -->
+<!-- @if (notification(); as notif) { -->
+<!--   <div id="toast-notification" -->
+<!--        class="fixed top-4 right-4 bg-white border border-neutral-200 rounded-lg shadow-lg p-4 -->
+<!--               animate-slide-in-right z-50" -->
+<!--        [class.border-red-200]="notif.type === 'error'" -->
+<!--        [class.border-green-200]="notif.type === 'success'"> -->
+<!--     <div class="flex items-center space-x-3 min-w-80"> -->
+<!--       <div class="w-8 h-8 rounded-full flex items-center justify-center" -->
+<!--            [class.bg-red-500]="notif.type === 'error'" -->
+<!--            [class.bg-green-500]="notif.type === 'success'"> -->
+<!--         <i class="fa-solid text-white text-sm" -->
+<!--            [class.fa-check]="notif.type === 'success'" -->
+<!--            [class.fa-exclamation]="notif.type === 'error'"></i> -->
+<!--       </div> -->
+<!--       <div class="flex-1"> -->
+<!--         <p class="text-sm text-black font-medium">{{ notif.title }}</p> -->
+<!--         <p class="text-xs text-neutral-500">{{ notif.message }}</p> -->
+<!--       </div> -->
+<!--       <button (click)="onDismissNotification()" -->
+<!--               class="text-neutral-400 hover:text-neutral-600 transition-colors"> -->
+<!--         <i class="fa-solid fa-times"></i> -->
+<!--       </button> -->
+<!--     </div> -->
+<!--   </div> -->
+<!-- } -->

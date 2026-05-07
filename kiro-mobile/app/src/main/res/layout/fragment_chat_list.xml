@@ -1,0 +1,209 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/screen_background">
+
+    <com.google.android.material.appbar.AppBarLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/surface_card"
+        android:elevation="2dp">
+
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            app:title="Tin nhắn"
+            app:titleTextAppearance="@style/TextAppearance.MaterialComponents.Headline6"
+            app:titleTextColor="@color/text_primary"
+            app:backgroundTint="@color/surface_card"/>
+
+        <!-- Search bar -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingHorizontal="12dp"
+            android:paddingBottom="8dp"
+            android:gravity="center_vertical">
+
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:layout_marginStart="12dp"
+                android:src="@android:drawable/ic_menu_search"
+                android:contentDescription="Tìm kiếm"
+                android:tint="@color/text_hint"/>
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/et_search"
+                android:layout_width="0dp"
+                android:layout_height="44dp"
+                android:layout_weight="1"
+                android:layout_marginHorizontal="8dp"
+                android:hint="Tìm cuộc trò chuyện..."
+                android:textColorHint="@color/text_hint"
+                android:textColor="@color/text_primary"
+                android:textSize="14sp"
+                android:inputType="text"
+                android:imeOptions="actionSearch"
+                android:maxLines="1"
+                android:background="@drawable/bg_search_bar"
+                android:paddingHorizontal="12dp"/>
+
+        </LinearLayout>
+
+        <!-- Filter chips -->
+        <HorizontalScrollView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:scrollbars="none"
+            android:paddingHorizontal="12dp"
+            android:paddingBottom="10dp">
+
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/chip_group_filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:singleSelection="true"
+                app:selectionRequired="true">
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_all"
+                    style="@style/Widget.Material3.Chip.Filter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="36dp"
+                    android:text="Tất cả"
+                    android:textSize="13sp"
+                    android:checked="true"/>
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_unread"
+                    style="@style/Widget.Material3.Chip.Filter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="36dp"
+                    android:text="Chưa đọc"
+                    android:textSize="13sp"/>
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_groups"
+                    style="@style/Widget.Material3.Chip.Filter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="36dp"
+                    android:text="Nhóm"
+                    android:textSize="13sp"/>
+
+            </com.google.android.material.chip.ChipGroup>
+        </HorizontalScrollView>
+
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+        android:id="@+id/swipe_refresh"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recycler_view"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:clipToPadding="false"
+                android:paddingTop="4dp"
+                android:paddingBottom="88dp"/>
+
+            <!-- Loading -->
+            <ProgressBar
+                android:id="@+id/progress"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:visibility="gone"/>
+
+            <!-- Empty state -->
+            <LinearLayout
+                android:id="@+id/layout_empty"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:visibility="gone">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="💬"
+                    android:textSize="56sp"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Chưa có tin nhắn nào"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/text_primary"
+                    android:layout_marginTop="12dp"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Hãy bắt đầu một cuộc trò chuyện!"
+                    android:textSize="14sp"
+                    android:textColor="@color/text_secondary"
+                    android:layout_marginTop="6dp"
+                    android:gravity="center"/>
+            </LinearLayout>
+
+            <!-- Error state -->
+            <LinearLayout
+                android:id="@+id/layout_error"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:padding="24dp"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/tv_error"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/delete_red"
+                    android:gravity="center"
+                    android:textSize="14sp"/>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_retry"
+                    style="@style/Widget.MaterialComponents.Button.TextButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Thử lại"
+                    android:layout_marginTop="8dp"/>
+            </LinearLayout>
+
+            <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
+                android:id="@+id/fab_create_group"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom|end"
+                android:layout_margin="16dp"
+                android:text="Tạo nhóm"
+                android:textColor="@color/white"
+                android:contentDescription="Tạo nhóm"
+                app:backgroundTint="@color/brand_primary"
+                app:icon="@android:drawable/ic_input_add"
+                app:iconTint="@color/white"/>
+
+        </FrameLayout>
+    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

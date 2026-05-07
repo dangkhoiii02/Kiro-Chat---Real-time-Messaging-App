@@ -1,0 +1,17 @@
+<resources>
+    <string name="app_name">Kiro</string>
+    <string name="label_chats">Tin nhắn</string>
+    <string name="label_contacts">Danh bạ</string>
+    <string name="label_profile">Cá nhân</string>
+    <string name="label_login">Đăng nhập</string>
+    <string name="hint_username">Tên đăng nhập</string>
+    <string name="hint_password">Mật khẩu</string>
+    <string name="btn_login">Đăng nhập</string>
+    <string name="btn_logout">Đăng xuất</string>
+    <string name="btn_retry">Thử lại</string>
+    <string name="msg_loading">Đang tải...</string>
+    <string name="msg_empty_chats">Chưa có tin nhắn nào</string>
+    <string name="msg_empty_contacts">Không tìm thấy kết quả</string>
+    <string name="msg_network_error">Không có kết nối mạng</string>
+    <string name="msg_session_expired">Phiên đăng nhập hết hạn</string>
+</resources>

@@ -1,0 +1,201 @@
+<!--
+ Copyright 2026 trung-kieen
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
+
+
+<main id="main-content" class="flex h-[calc(100vh-4rem)]">
+
+  <section class="flex-1 bg-white flex flex-col">
+    <!-- Header -->
+    <div class="p-6 border-b border-neutral-200">
+      <div class="flex items-center space-x-4">
+        <button (click)="onBack()"
+          class="p-2 hover:bg-neutral-100 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-neutral-500"
+          aria-label="Go back">
+          <i class="fa-solid fa-arrow-left text-neutral-600"></i>
+        </button>
+        <div>
+          <h2 class="text-2xl text-black font-bold">User Profile</h2>
+          <p class="text-neutral-500 mt-1 text-sm">View user information and manage connection</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Content -->
+    <div class="flex-1 overflow-y-auto p-6">
+      @if (isLoading()) {
+      <!-- Loading State -->
+      <div class="flex items-center justify-center h-64">
+        <div class="text-center">
+          <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-neutral-500 mx-auto mb-4"></div>
+          <p class="text-neutral-500">Loading profile...</p>
+        </div>
+      </div>
+      } @else if (error()) {
+      <!-- Error State -->
+      <div class="max-w-full">
+        <div class="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+          <i class="fa-solid fa-exclamation-triangle text-red-500 text-3xl mb-4"></i>
+          <h3 class="text-lg text-red-900 mb-2">Unable to Load Profile</h3>
+          <p class="text-red-700 mb-4">{{ error() }}</p>
+          <button (click)="loadProfile()"
+            class="bg-red-500 text-white px-6 py-2 rounded-lg hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500">
+            Retry
+          </button>
+        </div>
+      </div>
+      } @else if (profile()) {
+      <!-- Profile Content -->
+      <div class="max-w-full">
+        <!-- <div class="max-w-2xl"> -->
+        <!-- Profile Card -->
+        <div class="bg-white border border-neutral-200 rounded-lg p-6 mb-6 shadow-sm">
+          <!-- Avatar & Basic Info -->
+          <div class="flex flex-col items-center text-center mb-6">
+            <img [src]="profile()!.profilePictureUrl" [alt]="profile()!.fullname"
+              class="w-24 h-24 rounded-full mb-4 object-cover border-4 border-neutral-100">
+            <h3 class="text-2xl text-black font-bold mb-1">{{ profile()!.fullname }}</h3>
+            <p class="text-neutral-500 mb-2">{{ profile()!.username }}</p>
+
+            <!-- Last Active Status -->
+            @if (profile()!.showLastOnline) {
+            <div class="flex items-center space-x-2 text-sm text-neutral-500">
+              <i [class]="isActiveRecently() ? 'fa-solid fa-circle text-green-500' : 'fa-solid fa-circle text-neutral-400'"
+                class="text-xs"></i>
+              <span>
+                @if (isActiveRecently()) {
+                Active now
+                } @else {
+                Active {{ profile()!.lastActive | date:'short' }}
+                }
+              </span>
+            </div>
+            }
+          </div>
+
+          <!-- Profile Details -->
+          <div class="space-y-4 mb-6">
+            @if (profile()!.emailAddress && profile()!.showEmail) {
+            <div class="flex items-center justify-between py-2 border-b border-neutral-100">
+              <span class="text-sm text-neutral-700 font-medium">Email</span>
+              <span class="text-sm text-neutral-900">{{ profile()!.emailAddress }}</span>
+            </div>
+            }
+
+            <div class="flex items-center justify-between py-2 border-b border-neutral-100">
+              <span class="text-sm text-neutral-700 font-medium">Member since</span>
+              <span class="text-sm text-neutral-900">{{ profile()!.createdAt | date:'MMMM yyyy' }}</span>
+            </div>
+
+            <div class="flex items-center justify-between py-2">
+              <span class="text-sm text-neutral-700 font-medium">Mutual friends</span>
+              <span class="text-sm text-neutral-900">{{ profile()!.mutualFriendCount || 0 }} connections</span>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="flex flex-col space-y-3">
+            <!-- Primary Action: Add Friend / Accept Request / Friends -->
+            @if (canAddFriend()) {
+            <button (click)="onAddFriend()"
+              class="w-full bg-primary text-white px-6 py-3 rounded-lg hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500 flex items-center justify-center space-x-2 transition-colors">
+              <i [class]="'fa-solid ' + connectionStatusIcon()"></i>
+              <span>{{ connectionStatusText() }}</span>
+            </button>
+            } @else if (canAcceptRequest()) {
+            <div class="flex gap-2 w-full">
+              <button (click)="onAcceptRequest()" [disabled]="isLoading()"
+                class="flex-1 bg-neutral-600 hover:bg-neutral-700 text-white px-6 py-3 rounded-lg flex items-center justify-center space-x-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                <i class="fa-solid fa-user-check"></i>
+                <span>Accept Request</span>
+              </button>
+              <button (click)="onDenyRequest()" [disabled]="isLoading()"
+                class="flex-1 bg-neutral-200 hover:bg-neutral-300 text-neutral-700 px-6 py-3 rounded-lg flex items-center justify-center space-x-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                <i class="fa-solid fa-user-times"></i>
+                <span>Deny</span>
+              </button>
+            </div>
+            }@else if (isFriends()) {
+            <div (click)="onUnfriend()" (disabled)="isLoading()"
+              class="w-full bg-neutral-100 hover:bg-red-50 hover:text-red-600 text-neutral-700 px-6 py-3 rounded-lg flex items-center justify-center space-x-2 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
+              <i class="fa-solid fa-user-minus"></i>
+              <span>Unfriend</span>
+            </div>
+            }
+            @else if (canUnsendRequest()) {
+            <button (click)="onUnsendFriendRequest()" [disabled]="isLoading()"
+              class="w-full bg-neutral-200 hover:bg-neutral-300 text-neutral-700 px-6 py-3 rounded-lg flex items-center justify-center space-x-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+              <i class="fa-solid fa-undo"></i>
+              <span>Cancel Request</span>
+            </button>
+            }
+
+            <!-- Secondary Actions Row -->
+            <div class="flex space-x-3">
+              @if (canMessage()) {
+              <button (click)="onMessage()"
+                class="flex-1 bg-white border border-neutral-200 text-neutral-700 px-4 py-3 rounded-lg hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-neutral-500 flex items-center justify-center space-x-2 transition-colors">
+                <i class="fa-solid fa-comment"></i>
+                <span>Message</span>
+              </button>
+              }
+
+              @if (canBlock()) {
+              <button (click)="onBlock()"
+                class="flex-1 bg-white border border-neutral-200 text-neutral-700 px-4 py-3 rounded-lg hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-neutral-500 flex items-center justify-center space-x-2 transition-colors">
+                <i class="fa-solid fa-user-slash"></i>
+                <span>Block</span>
+              </button>
+              } @else if (isBlocked()) {
+              <button (click)="onUnblock()"
+                class="flex-1 bg-white border border-red-200 text-red-700 px-4 py-3 rounded-lg hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500 flex items-center justify-center space-x-2 transition-colors">
+                <i class="fa-solid fa-user-check"></i>
+                <span>Unblock</span>
+              </button>
+              }
+            </div>
+
+            <!-- Report Button -->
+            <button (click)="onReport()"
+              class="w-full bg-white border border-neutral-200 text-neutral-600 px-6 py-3 rounded-lg hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-neutral-500 flex items-center justify-center space-x-2 transition-colors">
+              <i class="fa-solid fa-flag"></i>
+              <span>Report User</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Recent Activity Card -->
+        @if (profile()!.recentActivity && profile()!.recentActivity.length > 0) {
+        <div class="bg-white border border-neutral-200 rounded-lg p-6 shadow-sm">
+          <h4 class="text-lg text-black font-bold mb-4">Recent Activity</h4>
+          <div class="space-y-3">
+            @for (activity of profile()!.recentActivity; track activity.id) {
+            <div
+              class="flex items-center space-x-3 p-3 bg-neutral-50 rounded-lg hover:bg-neutral-100 transition-colors">
+              <i [class]="'fa-solid ' + getActivityIcon(activity.type) + ' text-neutral-400'"></i>
+              <div class="flex-1">
+                <p class="text-sm text-neutral-700">{{ activity.message }}</p>
+                <p class="text-xs text-neutral-500">{{ activity.timestamp | date:'short' }}</p>
+              </div>
+            </div>
+            }
+          </div>
+        </div>
+        }
+      </div>
+      }
+    </div>
+  </section>
+</main>

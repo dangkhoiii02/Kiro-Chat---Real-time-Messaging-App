@@ -1,0 +1,122 @@
+<div class="flex items-start gap-3" [class.justify-end]="isOwn()">
+
+  @if (!isOwn() && avatarUrl()) {
+  <img [src]="avatarUrl()" [alt]="senderName()" class="w-8 h-8 rounded-full object-cover flex-shrink-0 mt-1">
+  }
+
+  <div class="flex flex-col max-w-[70%]" [class.items-end]="isOwn()">
+
+    @if (showSenderName() && senderName()) {
+      <span class="text-xs font-medium text-neutral-600 mb-1 px-1">{{ senderName() }}</span>
+    }
+
+    <!-- Image -->
+    @if (message().type === 'image' && message().mediaUrl) {
+    <div class="rounded-lg overflow-hidden cursor-pointer transition-all hover:opacity-95"
+      [class.bg-neutral-500]="isOwn()" [class.bg-neutral-100]="!isOwn()"
+      [class.border-2]="imageError()" [class.border-red-400]="imageError()"
+      (click)="onImageClick()" (contextmenu)="onContextMenu($event)">
+      @if (!imageError()) {
+        <img [src]="message().mediaUrl" [alt]="message().mediaName"
+             class="max-w-full max-h-[300px] object-cover block"
+             (error)="onImageError()" loading="lazy">
+      } @else {
+        <div class="p-4 flex flex-col items-center gap-2 min-w-[200px]">
+          <i class="fa-solid fa-image-slash text-2xl" [class.text-white]="isOwn()" [class.text-neutral-400]="!isOwn()"></i>
+          <span class="text-xs text-center opacity-75" [class.text-white]="isOwn()">Image unavailable</span>
+          <button class="text-xs underline opacity-75 hover:opacity-100" [class.text-white]="isOwn()"
+                  (click)="onDownload(); $event.stopPropagation()">Download instead</button>
+        </div>
+      }
+    </div>
+    }
+
+    <!-- Video -->
+    @else if (message().type === 'video' && message().mediaUrl) {
+    <div class="rounded-lg overflow-hidden cursor-pointer transition-all hover:opacity-95 relative group"
+      [class.bg-neutral-500]="isOwn()" [class.bg-neutral-100]="!isOwn()"
+      (click)="onVideoClick()" (contextmenu)="onContextMenu($event)">
+      <div class="relative">
+        <div class="w-[300px] h-[200px] flex items-center justify-center"
+             [class.bg-neutral-600]="isOwn()" [class.bg-neutral-200]="!isOwn()">
+          <i class="fa-solid fa-video text-3xl" [class.text-white]="isOwn()" [class.text-neutral-400]="!isOwn()"></i>
+        </div>
+        <div class="absolute inset-0 flex items-center justify-center bg-black/30 group-hover:bg-black/40 transition-colors">
+          <div class="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center shadow-lg">
+            <i class="fa-solid fa-play text-neutral-800 ml-1"></i>
+          </div>
+        </div>
+      </div>
+      <div class="p-2 flex items-center justify-between"
+           [class.bg-neutral-600]="isOwn()" [class.bg-neutral-200]="!isOwn()">
+        <span class="text-xs truncate max-w-[200px]" [class.text-white]="isOwn()">{{ message().mediaName || 'Video' }}</span>
+      </div>
+    </div>
+    }
+
+    <!-- File -->
+    @else if (message().type === 'file' && message().mediaUrl) {
+    <div class="rounded-lg p-3 cursor-pointer transition-colors"
+      [class.bg-neutral-500]="isOwn()" [class.text-white]="isOwn()"
+      [class.bg-neutral-100]="!isOwn()"
+      (click)="onDownload()" (contextmenu)="onContextMenu($event)">
+      <div class="flex items-center gap-2 mb-1">
+        <i [class]="'fa-solid ' + fileIcon() + (isOwn() ? ' text-white' : ' text-neutral-500')"></i>
+        <span class="text-sm font-medium truncate max-w-[200px]">{{ message().mediaUrl }}</span>
+      </div>
+      @if ((message().fileSize ?? 0) > 0) {
+        <p class="text-xs opacity-75">{{ formattedFileSize() }}</p>
+      }
+    </div>
+    }
+
+    <!-- Text -->
+    @else if (message().type === 'text') {
+    <div class="rounded-lg p-3 text-sm"
+      [class.bg-neutral-500]="isOwn()" [class.text-white]="isOwn()"
+      [class.bg-neutral-100]="!isOwn()" [class.text-black]="!isOwn()"
+      (contextmenu)="onContextMenu($event)">
+      {{ message().content }}
+    </div>
+    }
+
+    <!-- Call log — chỉ hiện bên gọi, ẩn hoàn toàn bên nhận -->
+    @else if (message().type === 'call') {
+      @if (isOwn()) {
+        <div class="rounded-xl px-4 py-2.5 flex items-center gap-2.5 text-sm font-medium bg-neutral-900 text-white">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 shrink-0" viewBox="0 0 24 24"
+               fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="23 7 16 12 23 17 23 7"/>
+            <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+          </svg>
+          <span>{{ message().content }}</span>
+        </div>
+      }
+    }
+
+    <!-- Fallback -->
+    @else {
+    <div class="rounded-lg p-3 border border-dashed"
+      [class.bg-neutral-500]="isOwn()" [class.text-white]="isOwn()"
+      [class.bg-neutral-100]="!isOwn()"
+      [class.border-neutral-400]="isOwn()" [class.border-neutral-300]="!isOwn()"
+      (contextmenu)="onContextMenu($event)">
+      <div class="flex items-center gap-2">
+        <i class="fa-solid fa-file-circle-question" [class.text-white]="isOwn()" [class.text-neutral-500]="!isOwn()"></i>
+        <span class="text-sm font-medium">Unknown Message</span>
+      </div>
+    </div>
+    }
+
+    <!-- Metadata -->
+    <div class="flex items-center gap-2 mt-1" [class.flex-row-reverse]="!isOwn()">
+      <span class="text-xs text-neutral-500">{{ this.message().timestamp | messageTime }}</span>
+      @if (isOwn()) {
+        <app-message-state-indicator [messageState]="message().messageState" />
+        @if (isLast()) {
+          <span class="message-state text-xs text-neutral-500">{{ message().messageState }}</span>
+        }
+      }
+    </div>
+  </div>
+</div>
