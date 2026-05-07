@@ -105,23 +105,20 @@ npm run build
 
 **Messaging**
 
-![Messaging](./assets/messaging.png)
+![Messaging](./assets/message.png)
 
 **Group chat**
 
-![Group messaging](./assets/group-messaging.gif)
+![Group messaging](./assets/create_group.png)
 
 **Contacts and friend requests**
 
-![Contact manager](./assets/contact-manager.png)
+![Contact manager](./assets/requests.png)
 
-**Media sharing**
 
-![Media sharing](./assets/media-sharing.gif)
 
-**Profile and authentication**
 
-![Profile](./assets/profile.png)
+
 
 ## License
 
