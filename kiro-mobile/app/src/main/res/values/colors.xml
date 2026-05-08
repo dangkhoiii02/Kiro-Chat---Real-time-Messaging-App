@@ -45,4 +45,7 @@
 
     <!-- Avatar placeholder bg -->
     <color name="avatar_bg">#E0E7FF</color>
+
+    <!-- Alias for bg_primary (same as screen_background) -->
+    <color name="bg_primary">#F7F8FA</color>
 </resources>

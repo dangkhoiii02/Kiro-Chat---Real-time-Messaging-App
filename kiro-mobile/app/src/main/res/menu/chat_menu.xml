@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/action_voice_call"
+        android:icon="@android:drawable/ic_btn_speak_now"
+        android:title="Cuộc gọi thoại"
+        app:showAsAction="always" />
+    <item
+        android:id="@+id/action_video_call"
+        android:icon="@android:drawable/ic_menu_camera"
+        android:title="Cuộc gọi video"
+        app:showAsAction="always" />
+    <item
+        android:id="@+id/action_group_info"
+        android:icon="@android:drawable/ic_menu_info_details"
+        android:title="Thông tin nhóm"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/action_block_user"
+        android:title="Chặn người dùng"
+        app:showAsAction="never" />
+</menu>

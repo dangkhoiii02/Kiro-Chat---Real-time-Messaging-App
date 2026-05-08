@@ -16,6 +16,7 @@ import com.google.android.material.button.MaterialButton;
 import com.ptithcm.kiro_mobile.R;
 import com.ptithcm.kiro_mobile.config.AppConfig;
 import com.ptithcm.kiro_mobile.data.model.user.PublicProfile;
+import com.ptithcm.kiro_mobile.util.ImageLoader;
 
 public class ContactAdapter extends ListAdapter<PublicProfile, ContactAdapter.ViewHolder> {
 
@@ -75,13 +76,7 @@ public class ContactAdapter extends ListAdapter<PublicProfile, ContactAdapter.Vi
             tvUsername.setText("@" + (profile.getUsername() != null ? profile.getUsername() : ""));
 
             String avatarUrl = normalizeUrl(profile.getProfilePictureUrl());
-            Glide.with(itemView.getContext())
-                    .load(avatarUrl)
-                    .circleCrop()
-                    .placeholder(R.drawable.ic_avatar_placeholder)
-                    .error(R.drawable.ic_avatar_placeholder)
-                    .into(ivAvatar);
-
+            ImageLoader.loadAvatar(itemView.getContext(), avatarUrl, ivAvatar);
             btnAction.setVisibility(View.GONE);
             btnSecondaryAction.setVisibility(View.GONE);
 
@@ -122,7 +117,8 @@ public class ContactAdapter extends ListAdapter<PublicProfile, ContactAdapter.Vi
 
         private String normalizeUrl(String url) {
             if (url == null) return null;
-            return url.replace("http://localhost:9000", AppConfig.MINIO_PUBLIC_URL);
+            return url.replace("http://localhost:9000", AppConfig.MINIO_PUBLIC_URL)
+                      .replace("http://localhost:8080", "http://10.0.2.2:8080");
         }
 
         private void configureSearchActions(PublicProfile profile, ActionListener listener) {

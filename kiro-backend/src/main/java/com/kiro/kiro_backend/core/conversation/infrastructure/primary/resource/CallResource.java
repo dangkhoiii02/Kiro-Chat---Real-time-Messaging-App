@@ -13,6 +13,7 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
@@ -30,7 +31,9 @@ public class CallResource {
     private String livekitApiSecret;
 
     @GetMapping("/{conversationId}/token")
-    public ResponseEntity<Map<String, String>> generateToken(@PathVariable String conversationId) {
+    public ResponseEntity<Map<String, String>> generateToken(
+            @PathVariable String conversationId,
+            @RequestParam(defaultValue = "web") String platform) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String userId = "anonymous";
         String userName = "User";
@@ -47,14 +50,15 @@ public class CallResource {
         }
 
         try {
+            String identity = userId + "_" + platform;
             AccessToken token = new AccessToken(livekitApiKey, livekitApiSecret);
             token.setName(userName);
-            token.setIdentity(userId);
+            token.setIdentity(identity);
             token.addGrants(new RoomJoin(true), new RoomName(conversationId));
             
             String jwtToken = token.toJwt();
             
-            log.info("Generated LiveKit token for user {} in conversation {}", userId, conversationId);
+            log.info("Generated LiveKit token for user {} (identity={}) in conversation {}", userId, identity, conversationId);
             
             return ResponseEntity.ok(Map.of("token", jwtToken));
         } catch (Exception e) {

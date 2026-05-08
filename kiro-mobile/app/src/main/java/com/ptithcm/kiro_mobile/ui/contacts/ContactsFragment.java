@@ -224,6 +224,7 @@ public class ContactsFragment extends Fragment {
                 ChatFragment chatFragment = ChatFragment.newInstance(
                         finalResult.getData().getConversationId(),
                         profile.getDisplayName(),
+                        false,
                         false);
                 if (getActivity() instanceof com.ptithcm.kiro_mobile.ui.main.MainActivity) {
                     ((com.ptithcm.kiro_mobile.ui.main.MainActivity) getActivity())

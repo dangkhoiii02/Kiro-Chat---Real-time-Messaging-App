@@ -15,6 +15,7 @@ import com.bumptech.glide.Glide;
 import com.ptithcm.kiro_mobile.R;
 import com.ptithcm.kiro_mobile.config.AppConfig;
 import com.ptithcm.kiro_mobile.data.model.chat.Conversation;
+import com.ptithcm.kiro_mobile.util.ImageLoader;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -86,6 +87,7 @@ public class ConversationAdapter extends ListAdapter<Conversation, ConversationA
 
     static class ViewHolder extends RecyclerView.ViewHolder {
         private final ImageView ivAvatar;
+        private final ImageView ivOnline;
         private final TextView tvName;
         private final TextView tvLastMessage;
         private final TextView tvTime;
@@ -94,6 +96,7 @@ public class ConversationAdapter extends ListAdapter<Conversation, ConversationA
         ViewHolder(@NonNull View itemView) {
             super(itemView);
             ivAvatar      = itemView.findViewById(R.id.iv_avatar);
+            ivOnline      = itemView.findViewById(R.id.iv_online);
             tvName        = itemView.findViewById(R.id.tv_name);
             tvLastMessage = itemView.findViewById(R.id.tv_last_message);
             tvTime        = itemView.findViewById(R.id.tv_time);
@@ -121,13 +124,14 @@ public class ConversationAdapter extends ListAdapter<Conversation, ConversationA
             }
 
             // Avatar
-            String avatarUrl = normalizeUrl(item.getAvatarUrl());
-            Glide.with(itemView.getContext())
-                    .load(avatarUrl)
-                    .circleCrop()
-                    .placeholder(R.drawable.ic_avatar_placeholder)
-                    .error(R.drawable.ic_avatar_placeholder)
-                    .into(ivAvatar);
+            ImageLoader.loadAvatar(itemView.getContext(), item.getAvatarUrl(), ivAvatar);
+
+            // Online indicator (hide for groups or offline users)
+            if (!item.isGroup() && item.isOnline()) {
+                ivOnline.setVisibility(View.VISIBLE);
+            } else {
+                ivOnline.setVisibility(View.GONE);
+            }
 
             itemView.setOnClickListener(v -> {
                 if (listener != null) listener.onItemClick(item);

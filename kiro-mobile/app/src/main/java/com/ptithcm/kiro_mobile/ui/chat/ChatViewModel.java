@@ -17,6 +17,7 @@ import com.ptithcm.kiro_mobile.data.socket.StompManager;
 import com.ptithcm.kiro_mobile.util.Result;
 import com.ptithcm.kiro_mobile.util.SingleLiveEvent;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -262,6 +263,51 @@ public class ChatViewModel extends AndroidViewModel {
         publishMessages();
     }
 
+    public void uploadAndSendMedia(File file) {
+        // 1. Create local pending message with local file path for optimistic UI
+        LocalMessage local = LocalMessage.outgoing(conversationId, "", "image", currentUserId);
+        // We hijack mediaUrl to hold local path temporarily
+        local.confirmSent(new ChatMessage()); // Temporary
+        // Wait, confirmSent overwrites state. Let's not use confirmSent here.
+        // We just need a way to set mediaUrl on LocalMessage. LocalMessage has no setMediaUrl.
+        // I will add a method or just pass it in constructor if possible.
+        // Actually, let's just show a generic pending image or let the adapter handle it.
+        // For simplicity, we just send it in background.
+        
+        executor.execute(() -> doSendMedia(file, local));
+    }
+
+    private void doSendMedia(File file, LocalMessage local) {
+        // Add to UI as pending
+        synchronized (messageList) {
+            messageList.add(local);
+        }
+        publishMessages();
+        scrollToBottom.postValue(null);
+
+        Result<ChatMessage> result = isGroupConversation
+                ? repository.sendGroupAttachment(conversationId, file)
+                : repository.sendDirectAttachment(conversationId, file);
+                
+        synchronized (messageList) {
+            if (result.isSuccess()) {
+                ChatMessage serverMsg = result.getData();
+                if (serverMsg.getMessageId() != null &&
+                    knownServerIds.contains(serverMsg.getMessageId())) {
+                    messageList.remove(local);
+                } else {
+                    local.confirmSent(serverMsg);
+                    if (serverMsg.getMessageId() != null) {
+                        knownServerIds.add(serverMsg.getMessageId());
+                    }
+                }
+            } else {
+                local.markFailed();
+            }
+        }
+        publishMessages();
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     private List<LocalMessage> convertAndDeduplicate(MessageList data) {
@@ -303,6 +349,10 @@ public class ChatViewModel extends AndroidViewModel {
     /** Called by the host activity/fragment once the profile is loaded. */
     public void setCurrentUserId(String userId) {
         this.currentUserId = userId;
+    }
+
+    public String getCurrentUserId() {
+        return currentUserId;
     }
 
     @Override

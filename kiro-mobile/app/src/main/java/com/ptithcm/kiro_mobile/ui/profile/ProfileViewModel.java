@@ -35,6 +35,14 @@ public class ProfileViewModel extends AndroidViewModel {
         });
     }
 
+    public void uploadAvatar(java.io.File file) {
+        profileResult.setValue(Result.loading());
+        executor.execute(() -> {
+            Result<UserProfile> result = userRepository.uploadAvatar(file);
+            profileResult.postValue(result);
+        });
+    }
+
     @Override
     protected void onCleared() {
         super.onCleared();

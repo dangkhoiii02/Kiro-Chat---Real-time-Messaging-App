@@ -89,7 +89,8 @@ public class CreateGroupFragment extends Fragment {
             ChatFragment chatFragment = ChatFragment.newInstance(
                     ref.getConversationId(),
                     groupName.isEmpty() ? "Nhóm mới" : groupName,
-                    true);
+                    true,
+                    false);
             requireActivity().getSupportFragmentManager()
                     .beginTransaction()
                     .replace(R.id.fragment_container, chatFragment)

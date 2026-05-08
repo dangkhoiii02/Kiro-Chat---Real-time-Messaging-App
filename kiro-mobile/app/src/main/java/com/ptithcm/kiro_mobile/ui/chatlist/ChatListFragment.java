@@ -19,6 +19,10 @@ import com.ptithcm.kiro_mobile.databinding.FragmentChatListBinding;
 import com.ptithcm.kiro_mobile.ui.chat.ChatFragment;
 import com.ptithcm.kiro_mobile.ui.group.CreateGroupFragment;
 import com.ptithcm.kiro_mobile.ui.main.MainActivity;
+import com.ptithcm.kiro_mobile.data.socket.StompManager;
+import com.ptithcm.kiro_mobile.data.socket.SocketEvent;
+import io.reactivex.disposables.CompositeDisposable;
+import android.util.Log;
 
 public class ChatListFragment extends Fragment {
 
@@ -30,6 +34,7 @@ public class ChatListFragment extends Fragment {
     private String currentChipType = "all";
     private final Handler searchHandler = new Handler();
     private Runnable searchRunnable;
+    private final CompositeDisposable disposables = new CompositeDisposable();
 
     @Nullable
     @Override
@@ -53,6 +58,15 @@ public class ChatListFragment extends Fragment {
         observeViewModel();
 
         viewModel.loadConversations();
+        
+        disposables.add(
+            StompManager.getInstance(requireContext()).events().subscribe(event -> {
+                if (event.type == SocketEvent.Type.PRESENCE_UPDATE) {
+                    // Reload list when presence changes
+                    requireActivity().runOnUiThread(() -> viewModel.loadConversations());
+                }
+            }, err -> Log.e("ChatListFragment", "Error observing presence", err))
+        );
     }
 
     private void setupRecyclerView() {
@@ -61,7 +75,9 @@ public class ChatListFragment extends Fragment {
             ChatFragment chatFragment = ChatFragment.newInstance(
                     conversation.getConversationId(),
                     conversation.getDisplayName(),
-                    conversation.isGroup()
+                    conversation.isGroup(),
+                    conversation.isOnline(),
+                    conversation.getRemoteUserId()
             );
             if (getActivity() instanceof MainActivity) {
                 ((MainActivity) getActivity()).openChat(chatFragment);
@@ -158,6 +174,7 @@ public class ChatListFragment extends Fragment {
     public void onDestroyView() {
         super.onDestroyView();
         searchHandler.removeCallbacksAndMessages(null);
+        disposables.clear();
         binding = null;
     }
 }

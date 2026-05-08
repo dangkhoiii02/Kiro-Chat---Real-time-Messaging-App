@@ -22,6 +22,9 @@ public class ApiClient {
     private final ContactApi contactApi;
     private final ConversationApi conversationApi;
     private final MessageApi messageApi;
+    private final CallApi callApi;
+    private final BlockApi blockApi;
+    private final GroupApi groupApi;
 
     private ApiClient(Context context) {
         TokenManager tokenManager = TokenManager.getInstance(context);
@@ -59,6 +62,9 @@ public class ApiClient {
         contactApi      = retrofit.create(ContactApi.class);
         conversationApi = retrofit.create(ConversationApi.class);
         messageApi      = retrofit.create(MessageApi.class);
+        callApi         = retrofit.create(CallApi.class);
+        blockApi        = retrofit.create(BlockApi.class);
+        groupApi        = retrofit.create(GroupApi.class);
     }
 
     public static synchronized ApiClient getInstance(Context context) {
@@ -73,6 +79,9 @@ public class ApiClient {
     public ContactApi      getContactApi()      { return contactApi; }
     public ConversationApi getConversationApi() { return conversationApi; }
     public MessageApi      getMessageApi()      { return messageApi; }
+    public CallApi         getCallApi()         { return callApi; }
+    public BlockApi        getBlockApi()        { return blockApi; }
+    public GroupApi        getGroupApi()        { return groupApi; }
 
     public <T> T create(Class<T> service) {
         return retrofit.create(service);

@@ -39,6 +39,10 @@ public class Conversation {
     @SerializedName("followingUp")
     private boolean followingUp;
 
+    /** userId of the other participant (only for 1-1 conversations) */
+    @SerializedName("remoteUserId")
+    private String remoteUserId;
+
     // ── Accessors ─────────────────────────────────────────────────────────────
 
     public String getConversationId()   { return conversationId; }
@@ -49,6 +53,7 @@ public class Conversation {
     public ChatMessage getLastMessage() { return lastMessage; }
     public String getLastMessageContent(){ return lastMessageContent; }
     public boolean isOnline()           { return isOnline; }
+    public String getRemoteUserId()     { return remoteUserId; }
 
     // ── Display helpers ───────────────────────────────────────────────────────
 

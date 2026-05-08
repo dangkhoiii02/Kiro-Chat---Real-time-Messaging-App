@@ -111,6 +111,15 @@ public class RestChat {
     return type.equals(ConversationTypeEnum.GROUP);
   }
 
+  /** Returns the userId of the other participant for 1-1 conversations. */
+  @Nullable
+  public UUID getRemoteUserId() {
+    if (dmMetadata != null && dmMetadata.getMessagingUser() != null) {
+      return dmMetadata.getMessagingUser().getUserId();
+    }
+    return null;
+  }
+
   // public MessageState getMessageState() {
   //   if (lastMessage == null) {
   //     return null;

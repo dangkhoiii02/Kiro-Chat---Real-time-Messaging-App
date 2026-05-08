@@ -6,7 +6,7 @@ import android.util.Log;
 import com.google.gson.Gson;
 import com.ptithcm.kiro_mobile.config.AppConfig;
 import com.ptithcm.kiro_mobile.data.model.chat.ChatMessage;
-
+import com.ptithcm.kiro_mobile.data.model.user.PresenceUpdate;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -47,6 +47,7 @@ public class StompManager {
     private static final String DEST_SENT      = "/user/queue/messages.sent";
     private static final String DEST_DELIVERED = "/user/queue/messages.delivered";
     private static final String DEST_SEEN      = "/user/queue/messages.seen";
+    private static final String DEST_PRESENCE  = "/topic/presence";
 
     // Reconnect backoff: 2s, 4s, 8s, 16s, 32s (capped)
     private static final long[] BACKOFF_SECONDS = {2, 4, 8, 16, 32};
@@ -151,6 +152,22 @@ public class StompManager {
         if (d != null && !d.isDisposed()) d.dispose();
     }
 
+    /**
+     * Send a call signal payload to /app/calls.signal.
+     * Safe to call even if not yet connected — will log a warning.
+     */
+    public void sendCallSignal(String jsonPayload) {
+        if (stompClient != null && stompClient.isConnected()) {
+            stompClient.send(CallSignalingManager.DEST_PUBLISH, jsonPayload)
+                    .subscribe(
+                            () -> Log.d(TAG, "Call signal sent"),
+                            err -> Log.e(TAG, "Failed to send call signal", err)
+                    );
+        } else {
+            Log.e(TAG, "sendCallSignal: StompClient not connected");
+        }
+    }
+
     // ── Internal ──────────────────────────────────────────────────────────────
 
     private void doConnect(String token) {
@@ -210,6 +227,31 @@ public class StompManager {
         subscribe(DEST_SENT,      SocketEvent.Type.MESSAGE_SENT);
         subscribe(DEST_DELIVERED, SocketEvent.Type.MESSAGE_DELIVERED);
         subscribe(DEST_SEEN,      SocketEvent.Type.MESSAGE_SEEN);
+
+        // Call signals
+        CallSignalingManager.getInstance(appContext).subscribeCallSignals(stompClient);
+
+        // Presence
+        subscribePresence();
+    }
+
+    private void subscribePresence() {
+        Disposable d = stompClient.topic(DEST_PRESENCE)
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(
+                        msg -> {
+                            try {
+                                PresenceUpdate presenceUpdate = gson.fromJson(msg.getPayload(), PresenceUpdate.class);
+                                if (presenceUpdate != null) {
+                                    eventSubject.onNext(new SocketEvent(SocketEvent.Type.PRESENCE_UPDATE, presenceUpdate));
+                                }
+                            } catch (Exception e) {
+                                Log.e(TAG, "Failed to parse presence payload", e);
+                            }
+                        },
+                        err -> Log.e(TAG, "Error subscribing to presence", err)
+                );
+        disposables.add(d);
     }
 
     private void subscribe(String destination, SocketEvent.Type type) {

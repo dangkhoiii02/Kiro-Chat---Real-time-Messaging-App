@@ -8,8 +8,12 @@ import com.ptithcm.kiro_mobile.data.model.chat.MessageList;
 import com.ptithcm.kiro_mobile.data.model.chat.SendMessageRequest;
 import com.ptithcm.kiro_mobile.util.Result;
 
+import java.io.File;
 import java.io.IOException;
 
+import okhttp3.MediaType;
+import okhttp3.MultipartBody;
+import okhttp3.RequestBody;
 import retrofit2.Response;
 
 public class MessageRepository {
@@ -41,6 +45,24 @@ public class MessageRepository {
                                                  String type) {
         SendMessageRequest req = new SendMessageRequest(conversationId, content, type);
         return execute(apiClient.getMessageApi().sendGroupMessage(req));
+    }
+
+    public Result<ChatMessage> sendDirectAttachment(String conversationId, File file) {
+        RequestBody convIdBody = RequestBody.create(MediaType.parse("text/plain"), conversationId);
+        RequestBody replyToBody = RequestBody.create(MediaType.parse("text/plain"), "");
+        RequestBody fileReqBody = RequestBody.create(MediaType.parse("image/*"), file);
+        MultipartBody.Part part = MultipartBody.Part.createFormData("file", file.getName(), fileReqBody);
+        
+        return execute(apiClient.getMessageApi().sendDirectAttachment(convIdBody, replyToBody, part));
+    }
+
+    public Result<ChatMessage> sendGroupAttachment(String conversationId, File file) {
+        RequestBody convIdBody = RequestBody.create(MediaType.parse("text/plain"), conversationId);
+        RequestBody replyToBody = RequestBody.create(MediaType.parse("text/plain"), "");
+        RequestBody fileReqBody = RequestBody.create(MediaType.parse("image/*"), file);
+        MultipartBody.Part part = MultipartBody.Part.createFormData("file", file.getName(), fileReqBody);
+        
+        return execute(apiClient.getMessageApi().sendGroupAttachment(convIdBody, replyToBody, part));
     }
 
     // ── Generic executor ─────────────────────────────────────────────────────

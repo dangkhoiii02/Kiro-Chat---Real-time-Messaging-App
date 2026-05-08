@@ -21,11 +21,17 @@ import com.ptithcm.kiro_mobile.ui.notifications.NotificationsFragment;
 import com.ptithcm.kiro_mobile.ui.profile.ProfileFragment;
 import com.ptithcm.kiro_mobile.ui.profile.ProfileViewModel;
 
+import com.ptithcm.kiro_mobile.ui.call.IncomingCallActivity;
+import com.ptithcm.kiro_mobile.data.socket.CallSignalingManager;
+import com.ptithcm.kiro_mobile.data.model.call.CallSignalMessage;
+import io.reactivex.disposables.Disposable;
+
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
 
     // package-visible so fragments can access bottomNav
     ActivityMainBinding binding;
+    private Disposable callSignalSubscription;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -53,6 +59,26 @@ public class MainActivity extends AppCompatActivity {
         if (savedInstanceState == null) {
             loadFragment(new ChatListFragment());
         }
+
+        observeCallSignals();
+    }
+
+    private void observeCallSignals() {
+        callSignalSubscription = CallSignalingManager.getInstance(this).signals().subscribe(
+                signal -> {
+                    if ("OFFER".equals(signal.getType())) {
+                        Log.d(TAG, "Received call OFFER from " + signal.getCallerName());
+                        Intent intent = new Intent(this, IncomingCallActivity.class);
+                        intent.putExtra(IncomingCallActivity.EXTRA_CONVERSATION_ID, signal.getConversationId());
+                        intent.putExtra(IncomingCallActivity.EXTRA_CALLER_ID, signal.getCallerId());
+                        intent.putExtra(IncomingCallActivity.EXTRA_CALLER_NAME, signal.getCallerName());
+                        intent.putExtra(IncomingCallActivity.EXTRA_CALLER_AVATAR, signal.getCallerAvatar());
+                        intent.putExtra(IncomingCallActivity.EXTRA_WITH_VIDEO, signal.isWithVideo());
+                        startActivity(intent);
+                    }
+                },
+                err -> Log.e(TAG, "Error observing call signals", err)
+        );
     }
 
     private void setupBottomNav() {
@@ -111,5 +137,13 @@ public class MainActivity extends AppCompatActivity {
         TokenManager.getInstance(this).clear();
         startActivity(new Intent(this, LoginActivity.class));
         finish();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (callSignalSubscription != null && !callSignalSubscription.isDisposed()) {
+            callSignalSubscription.dispose();
+        }
     }
 }

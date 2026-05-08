@@ -24,8 +24,13 @@ public class MessageAdapter extends ListAdapter<LocalMessage, RecyclerView.ViewH
     public interface RetryListener {
         void onRetry(String localId);
     }
+    
+    public interface ImageClickListener {
+        void onImageClick(String url);
+    }
 
     private RetryListener retryListener;
+    private ImageClickListener imageClickListener;
     private boolean isGroup = false;
 
     public MessageAdapter() {
@@ -33,6 +38,7 @@ public class MessageAdapter extends ListAdapter<LocalMessage, RecyclerView.ViewH
     }
 
     public void setRetryListener(RetryListener l) { this.retryListener = l; }
+    public void setImageClickListener(ImageClickListener l) { this.imageClickListener = l; }
 
     public void setGroup(boolean group) {
         isGroup = group;
@@ -60,9 +66,9 @@ public class MessageAdapter extends ListAdapter<LocalMessage, RecyclerView.ViewH
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         LocalMessage msg = getItem(position);
         if (holder instanceof MineViewHolder) {
-            ((MineViewHolder) holder).bind(msg, retryListener);
+            ((MineViewHolder) holder).bind(msg, retryListener, imageClickListener);
         } else {
-            ((TheirsViewHolder) holder).bind(msg, isGroup);
+            ((TheirsViewHolder) holder).bind(msg, isGroup, imageClickListener);
         }
     }
 
@@ -70,6 +76,7 @@ public class MessageAdapter extends ListAdapter<LocalMessage, RecyclerView.ViewH
 
     static class MineViewHolder extends RecyclerView.ViewHolder {
         private final TextView tvContent;
+        private final ImageView ivAttachment;
         private final TextView tvTime;
         private final TextView tvStatus;
         private final View     retryBtn;
@@ -77,13 +84,40 @@ public class MessageAdapter extends ListAdapter<LocalMessage, RecyclerView.ViewH
         MineViewHolder(@NonNull View v) {
             super(v);
             tvContent = v.findViewById(R.id.tv_content);
+            ivAttachment = v.findViewById(R.id.iv_attachment);
             tvTime    = v.findViewById(R.id.tv_time);
             tvStatus  = v.findViewById(R.id.tv_status);
             retryBtn  = v.findViewById(R.id.btn_retry);
         }
 
-        void bind(LocalMessage msg, RetryListener retryListener) {
-            tvContent.setText(msg.getContent());
+        void bind(LocalMessage msg, RetryListener retryListener, ImageClickListener imageClickListener) {
+            if (msg.getContent() != null && !msg.getContent().isEmpty()) {
+                tvContent.setVisibility(View.VISIBLE);
+                tvContent.setText(msg.getContent());
+            } else {
+                tvContent.setVisibility(View.GONE);
+            }
+
+            if ("image".equals(msg.getType()) && msg.getMediaUrl() != null && !msg.getMediaUrl().isEmpty()) {
+                ivAttachment.setVisibility(View.VISIBLE);
+                String rawUrl = msg.getMediaUrl();
+                String url = rawUrl.startsWith("http") ? rawUrl : AppConfig.MINIO_PUBLIC_URL + rawUrl;
+                url = url.replace("http://localhost:9000", AppConfig.MINIO_PUBLIC_URL)
+                         .replace("http://localhost:8080", "http://10.0.2.2:8080");
+                final String finalUrl = url;
+                Glide.with(itemView.getContext())
+                        .load(url)
+                        .placeholder(android.R.color.darker_gray)
+                        .into(ivAttachment);
+                        
+                ivAttachment.setOnClickListener(v -> {
+                    if (imageClickListener != null) imageClickListener.onImageClick(finalUrl);
+                });
+            } else {
+                ivAttachment.setVisibility(View.GONE);
+                ivAttachment.setOnClickListener(null);
+            }
+
             tvTime.setText(formatTime(msg.getTimestamp()));
 
             switch (msg.getStatus()) {
@@ -119,6 +153,7 @@ public class MessageAdapter extends ListAdapter<LocalMessage, RecyclerView.ViewH
 
     static class TheirsViewHolder extends RecyclerView.ViewHolder {
         private final TextView tvContent;
+        private final ImageView ivAttachment;
         private final TextView tvTime;
         private final ImageView ivAvatar;
         private final TextView tvSenderName;
@@ -126,13 +161,40 @@ public class MessageAdapter extends ListAdapter<LocalMessage, RecyclerView.ViewH
         TheirsViewHolder(@NonNull View v) {
             super(v);
             tvContent = v.findViewById(R.id.tv_content);
+            ivAttachment = v.findViewById(R.id.iv_attachment);
             tvTime    = v.findViewById(R.id.tv_time);
             ivAvatar  = v.findViewById(R.id.iv_avatar);
             tvSenderName = v.findViewById(R.id.tv_sender_name);
         }
 
-        void bind(LocalMessage msg, boolean isGroup) {
-            tvContent.setText(msg.getContent());
+        void bind(LocalMessage msg, boolean isGroup, ImageClickListener imageClickListener) {
+            if (msg.getContent() != null && !msg.getContent().isEmpty()) {
+                tvContent.setVisibility(View.VISIBLE);
+                tvContent.setText(msg.getContent());
+            } else {
+                tvContent.setVisibility(View.GONE);
+            }
+
+            if ("image".equals(msg.getType()) && msg.getMediaUrl() != null && !msg.getMediaUrl().isEmpty()) {
+                ivAttachment.setVisibility(View.VISIBLE);
+                String rawUrl = msg.getMediaUrl();
+                String url = rawUrl.startsWith("http") ? rawUrl : AppConfig.MINIO_PUBLIC_URL + rawUrl;
+                url = url.replace("http://localhost:9000", AppConfig.MINIO_PUBLIC_URL)
+                         .replace("http://localhost:8080", "http://10.0.2.2:8080");
+                final String finalUrl = url;
+                Glide.with(itemView.getContext())
+                        .load(url)
+                        .placeholder(android.R.color.darker_gray)
+                        .into(ivAttachment);
+                        
+                ivAttachment.setOnClickListener(v -> {
+                    if (imageClickListener != null) imageClickListener.onImageClick(finalUrl);
+                });
+            } else {
+                ivAttachment.setVisibility(View.GONE);
+                ivAttachment.setOnClickListener(null);
+            }
+
             tvTime.setText(formatTime(msg.getTimestamp()));
 
             if (isGroup) {

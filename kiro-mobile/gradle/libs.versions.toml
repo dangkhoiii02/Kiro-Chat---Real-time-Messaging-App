@@ -27,6 +27,10 @@ swiperefreshlayout = "1.1.0"
 stomp = "1.6.6"
 rxjava2 = "2.2.21"
 rxandroid2 = "2.1.1"
+# LiveKit + Coroutines (Video Call)
+livekit = "2.7.0"
+coroutines = "1.7.3"
+kotlin = "1.9.22"
 
 [libraries]
 junit = { group = "junit", name = "junit", version.ref = "junit" }
@@ -60,6 +64,11 @@ swiperefreshlayout = { group = "androidx.swiperefreshlayout", name = "swiperefre
 stomp-android = { group = "com.github.NaikSoftware", name = "StompProtocolAndroid", version.ref = "stomp" }
 rxjava2 = { group = "io.reactivex.rxjava2", name = "rxjava", version.ref = "rxjava2" }
 rxandroid2 = { group = "io.reactivex.rxjava2", name = "rxandroid", version.ref = "rxandroid2" }
+# LiveKit + Coroutines
+livekit-android = { group = "io.livekit", name = "livekit-android", version.ref = "livekit" }
+kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutines" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
+kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+
