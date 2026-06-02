@@ -36,6 +36,8 @@ const {
   until,
 } = require("../../helpers/driver.helper");
 
+jest.setTimeout(120000);
+
 // ============================================================================
 // HẰNG SỐ DÙNG CHUNG
 // ============================================================================
@@ -69,10 +71,7 @@ const SEND_BTN_XPATH =
   './/i[contains(@class, "fa-paper-plane")]]';
 
 /** XPath đến item hội thoại đầu tiên trong danh sách chat */
-const FIRST_CONVERSATION_XPATH =
-  '//div[contains(@class, "chat") or contains(@class, "conversation")]' +
-  '[contains(@class, "item") or contains(@class, "list")]' +
-  '//div[contains(@class, "cursor-pointer") or @role="button"][1]';
+const FIRST_CONVERSATION_XPATH = '//app-chat-list//a[contains(@class, "cursor-pointer")][1]';
 
 // ============================================================================
 // BIẾN TOÀN CỤC
@@ -319,7 +318,7 @@ describe("UC01 - Nhắn tin thời gian thực (TC01, TC02, TC03)", () => {
      * BƯỚC 5: Click nút Gửi
      */
     console.log("📌 TC02 Bước 5: Bấm nút Gửi...");
-    await sendBtn.click();
+    await driver.executeScript("arguments[0].click();", sendBtn);
     console.log("✅ Đã bấm Gửi");
 
     /**
@@ -394,7 +393,7 @@ describe("UC01 - Nhắn tin thời gian thực (TC01, TC02, TC03)", () => {
       By.xpath(SEND_BTN_XPATH),
       5000
     );
-    await sendBtn.click();
+    await driver.executeScript("arguments[0].click();", sendBtn);
     console.log("✅ Đã bấm Gửi");
 
     /**
@@ -403,7 +402,7 @@ describe("UC01 - Nhắn tin thời gian thực (TC01, TC02, TC03)", () => {
      */
     console.log("📌 TC03 Bước 4: Chờ Toast lỗi xuất hiện...");
     const toast = await waitForToast(driver, ERROR_TOAST_TEXT, 10000);
-    const toastText = await toast.getText();
+    const toastText = await driver.executeScript("return arguments[0].textContent;", toast);
     console.log(`   📢 Toast: "${toastText}"`);
 
     expect(toastText).toContain(ERROR_TOAST_TEXT);

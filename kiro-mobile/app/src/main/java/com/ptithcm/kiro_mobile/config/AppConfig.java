@@ -8,12 +8,12 @@ public final class AppConfig {
 
     private AppConfig() {}
 
-    // ── Emulator URLs ────────────────────────────────────────────────────────
-    public static final String BASE_API_URL      = "http://10.0.2.2:8080/api/v1/";
-    public static final String KEYCLOAK_URL      = "http://10.0.2.2:9093";
-    public static final String WEBSOCKET_URL     = "ws://10.0.2.2:8080/api/v1/ws";
-    public static final String MINIO_PUBLIC_URL  = "http://10.0.2.2:9000";
-    public static final String LIVEKIT_URL       = "ws://10.0.2.2:7880";
+    // ── Public Online Cloudflare URLs ────────────────────────────────────────
+    public static final String BASE_API_URL      = "https://api.kiro-chat.indevs.in/api/v1/";
+    public static final String KEYCLOAK_URL      = "https://auth.kiro-chat.indevs.in";
+    public static final String WEBSOCKET_URL     = "wss://api.kiro-chat.indevs.in/api/v1/ws";
+    public static final String MINIO_PUBLIC_URL  = "https://storage.kiro-chat.indevs.in";
+    public static final String LIVEKIT_URL       = "wss://call.kiro-chat.indevs.in";
 
     // ── Keycloak ─────────────────────────────────────────────────────────────
     public static final String KEYCLOAK_REALM    = "kiro-realm";

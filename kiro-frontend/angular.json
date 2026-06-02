@@ -60,6 +60,11 @@
         },
         "serve": {
           "builder": "@angular/build:dev-server",
+          "options": {
+            "allowedHosts": [
+              "kiro.kiro-chat.indevs.in"
+            ]
+          },
           "configurations": {
             "production": {
               "buildTarget": "kiro-frontend:build:production"

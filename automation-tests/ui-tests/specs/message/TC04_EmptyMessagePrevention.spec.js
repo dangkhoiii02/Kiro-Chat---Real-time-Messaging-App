@@ -167,11 +167,7 @@ describe("KiroChat - Kiểm thử chặn gửi tin nhắn rỗng", () => {
     // Click vào cuộc hội thoại đầu tiên
     const firstConversation = await waitForElement(
       driver,
-      By.xpath(
-        '//div[contains(@class, "chat") or contains(@class, "conversation")]' +
-          '[contains(@class, "item") or contains(@class, "list")]' +
-          '//div[contains(@class, "cursor-pointer") or @role="button"][1]'
-      ),
+      By.xpath('//app-chat-list//a[contains(@class, "cursor-pointer")][1]'),
       15000
     );
     await firstConversation.click();

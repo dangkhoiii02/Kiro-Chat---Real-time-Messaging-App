@@ -27,8 +27,8 @@ const DEFAULT_WAIT_TIMEOUT = 10000;
 
 /** Tài khoản test mặc định (được tạo sẵn trong Keycloak) */
 const TEST_USER = {
-  username: process.env.TEST_USERNAME || "testuser",
-  password: process.env.TEST_PASSWORD || "testpassword",
+  username: process.env.TEST_USERNAME || "testuser1@gmail.com",
+  password: process.env.TEST_PASSWORD || "example1",
 };
 
 // ============================================================================
@@ -96,11 +96,22 @@ async function loginToKiroChat(
   password = TEST_USER.password
 ) {
   // Bước 1: Truy cập trang chủ KiroChat
-  // Angular app sẽ tự redirect sang Keycloak nếu chưa đăng nhập
   await driver.get(BASE_URL);
 
+  // Kiểm tra nếu đã đăng nhập sẵn
+  try {
+    const currentUrl = await driver.getCurrentUrl();
+    const appRoot = await driver.findElements(By.css("app-root"));
+    if (appRoot.length > 0 && !currentUrl.includes("auth")) {
+      console.log("   ℹ️ Session active, bypassing login form.");
+      await driver.get(BASE_URL + "/chat");
+      return;
+    }
+  } catch (e) {
+    // Bỏ qua nếu có lỗi check
+  }
+
   // Bước 2: Chờ form đăng nhập Keycloak xuất hiện
-  // Keycloak sử dụng id="username" và id="password" cho input fields
   const usernameField = await driver.wait(
     until.elementLocated(By.id("username")),
     DEFAULT_WAIT_TIMEOUT,
@@ -133,6 +144,16 @@ async function loginToKiroChat(
     until.elementLocated(By.css("app-root")),
     DEFAULT_WAIT_TIMEOUT,
     "Ứng dụng KiroChat không load sau khi đăng nhập"
+  );
+
+  // Điều hướng thẳng tới /chat để đảm bảo luôn ở trang chat
+  await driver.get(BASE_URL + "/chat");
+
+  // Chờ cho URL thực sự chứa /chat
+  await driver.wait(
+    until.urlContains("/chat"),
+    DEFAULT_WAIT_TIMEOUT,
+    "Không thể chuyển hướng sang trang /chat"
   );
 }
 

@@ -1,0 +1,26 @@
+tunnel: c7f5e432-24bc-4250-862c-81e61fb01cc0
+credentials-file: /Users/dangkhoii/.cloudflared/c7f5e432-24bc-4250-862c-81e61fb01cc0.json
+
+ingress:
+  # 1. Web Frontend (Angular)
+  - hostname: kiro.kiro-chat.indevs.in
+    service: http://localhost:4200
+
+  # 2. Backend API (Spring Boot)
+  - hostname: api.kiro-chat.indevs.in
+    service: http://localhost:8080
+
+  # 3. Auth (Keycloak)
+  - hostname: auth.kiro-chat.indevs.in
+    service: http://localhost:9093
+
+  # 4. Storage (MinIO API)
+  - hostname: storage.kiro-chat.indevs.in
+    service: http://localhost:9000
+
+  # 5. Video Call (LiveKit)
+  - hostname: call.kiro-chat.indevs.in
+    service: http://localhost:7880
+
+  # 6. Fallback trả về lỗi 404 cho các truy cập khác
+  - service: http_status:404

@@ -81,9 +81,11 @@ public class SpringDataContactRepository implements ContactRepository {
 
   @Override
   public void removeContact(UserDBId a, UserDBId b) {
-    ContactEntity connection = repository.findConnection(a.value(), b.value())
-        .orElseThrow(() -> new EntityNotFoundException("Not found connection between users"));
-    repository.delete(connection);
+    List<ContactEntity> connections = repository.findConnection(a.value(), b.value());
+    if (connections.isEmpty()) {
+      throw new EntityNotFoundException("Not found connection between users");
+    }
+    repository.deleteAll(connections);
   }
 
   @Override

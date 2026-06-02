@@ -64,11 +64,11 @@ public interface JpaContactRepository
   @Query("""
       SELECT c
       FROM ContactEntity c
-      WHERE (c.owningUserId = :currentUserId AND c.contactUserId = :targetId)
-         OR (c.contactUserId = :currentUserId AND c.owningUserId = :targetId)
-         AND c.blockedByUserId IS NOT NULL
+      WHERE ((c.owningUserId = :currentUserId AND c.contactUserId = :targetId)
+         OR (c.contactUserId = :currentUserId AND c.owningUserId = :targetId))
+         AND c.blockedByUserId IS NULL
       """)
-  Optional<ContactEntity> findConnection(
+  List<ContactEntity> findConnection(
       @Param("currentUserId") Long currentUserId,
       @Param("targetId") Long targetId);
 

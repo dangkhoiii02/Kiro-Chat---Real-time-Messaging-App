@@ -206,11 +206,7 @@ describe("KiroChat - Kiểm thử giới hạn ký tự tin nhắn", () => {
     // Component chat-list hiển thị các item conversation
     const firstConversation = await waitForElement(
       driver,
-      By.xpath(
-        '//div[contains(@class, "chat") or contains(@class, "conversation")]' +
-          '[contains(@class, "item") or contains(@class, "list")]' +
-          '//div[contains(@class, "cursor-pointer") or @role="button"][1]'
-      ),
+      By.xpath('//app-chat-list//a[contains(@class, "cursor-pointer")][1]'),
       15000
     );
     await firstConversation.click();
@@ -310,7 +306,7 @@ describe("KiroChat - Kiểm thử giới hạn ký tự tin nhắn", () => {
     );
 
     // Click nút Gửi
-    await sendButton.click();
+    await driver.executeScript("arguments[0].click();", sendButton);
     console.log("✅ Đã bấm nút Gửi");
 
     /**

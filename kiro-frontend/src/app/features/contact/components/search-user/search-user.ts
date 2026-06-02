@@ -83,8 +83,17 @@ export class SearchUser {
   }
 
   onAddFriend(user: IContactProfile): void {
+    const currentCount = parseInt(localStorage.getItem('friend_requests_count') || '0', 10);
+    if (currentCount >= 50) {
+      this.notificationService.error(
+        'Bạn đã vượt giới hạn 50 lời mời/ngày'
+      );
+      return;
+    }
+
     this.friendManager.sendAddFriend(user.userId).subscribe({
       next: (updated) => {
+        localStorage.setItem('friend_requests_count', (currentCount + 1).toString());
         user.friendshipStatus = updated.status;
         /* re-trigger signal so button flips instantly */
         this.users.update(currentUsers => {

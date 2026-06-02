@@ -108,6 +108,7 @@ public class TC07_UnauthorizedAccessTest {
 
         // Cấu hình RestAssured
         RestAssured.baseURI = BASE_URL;
+        RestAssured.basePath = "/api/v1";
     }
 
     /**

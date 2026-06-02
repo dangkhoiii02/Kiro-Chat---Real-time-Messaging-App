@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-import { ChangeDetectionStrategy, Component, ElementRef, input, output, signal, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, inject, input, output, signal, viewChild } from '@angular/core';
 import { IFileUploadRequest, MessageType } from '../../../models/message.model';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { NotificationService } from '../../../../../shared/services/notification.service';
 
 export interface ISendMessageData {
   content: string;
@@ -33,6 +34,7 @@ export interface ISendMessageData {
 })
 export class MessageInput {
 
+  private notificationService = inject(NotificationService);
 
   // input
   isSending = input(false);
@@ -40,7 +42,7 @@ export class MessageInput {
   isUploading = input(false);
   placeholder = input("Type a message...");
   acceptedFileTypes = input("*/*");
-  maxFileSizeMB = input(10);
+  maxFileSizeMB = input(25);
 
 
   // output
@@ -86,6 +88,11 @@ export class MessageInput {
       return;
     }
 
+    if (text.length > 5000) {
+      this.notificationService.error('Vượt quá giới hạn 5000 ký tự');
+      return;
+    }
+
     // todo
     this.send.emit({ content: text, type: 'text' })
     this.content.set('');
@@ -101,7 +108,7 @@ export class MessageInput {
 
     const maxSize = this.maxFileSizeMB() * 1024 * 1024;
     if (file.size > maxSize) {
-      // Emit error or handle via error output
+      this.notificationService.error('Dung lượng tệp vượt quá giới hạn 25MB');
       throw new Error(`File too large. Max size: ${this.maxFileSizeMB()}MB`);
     }
 

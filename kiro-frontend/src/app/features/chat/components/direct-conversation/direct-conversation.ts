@@ -393,6 +393,7 @@ export class DirectConversation implements OnInit {
     this.state.setUploadingFile(true);
     this.state.setSelectedFile([req.file]);
     this.chatApiService.direct.uploadAttachment(conversationId, req.file).pipe(
+      delay(1500),
       switchMap(attachment => {
         if (!attachment) throw new Error('Upload returned no data');
         return this.sendAndTrackingNewMessage({ conversationId, type: attachment.messageType, attachment }).pipe(

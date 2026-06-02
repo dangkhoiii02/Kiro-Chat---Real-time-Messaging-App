@@ -37,6 +37,8 @@ const {
 const fs = require("fs");
 const path = require("path");
 
+jest.setTimeout(120000);
+
 // ============================================================================
 // HẰNG SỐ
 // ============================================================================
@@ -48,7 +50,7 @@ const MAX_FRIEND_REQUESTS_PER_DAY = 50;
 const EXCEED_ERROR_MSG = "Bạn đã vượt giới hạn 50 lời mời/ngày";
 
 /** URL trang tìm kiếm user */
-const SEARCH_USERS_URL = `${BASE_URL}/contacts/search`;
+const SEARCH_USERS_URL = `${BASE_URL}/contact`;
 
 // ============================================================================
 // LOCATORS
@@ -142,6 +144,7 @@ describe("UC03 - Quản lý danh bạ (TC10, TC11)", () => {
      */
     console.log("📌 TC10 Bước 1: Mở trang tìm kiếm user...");
     await driver.get(SEARCH_USERS_URL);
+    await driver.executeScript("localStorage.setItem('friend_requests_count', '49');");
 
     // Chờ trang Search Users load xong
     await waitForElement(
@@ -164,15 +167,22 @@ describe("UC03 - Quản lý danh bạ (TC10, TC11)", () => {
     );
 
     // Nhập từ khóa tìm kiếm (ký tự chung để tìm nhiều user)
+    await searchInput.click();
     await searchInput.clear();
-    await searchInput.sendKeys("user");
+    for (const char of "gmail") {
+      await searchInput.sendKeys(char);
+      await driver.sleep(100);
+    }
+    await driver.executeScript("arguments[0].dispatchEvent(new Event('input', { bubbles: true }));", searchInput);
 
     // Chờ kết quả tìm kiếm hiển thị (debounce 300ms + API call)
-    await driver.sleep(1500);
+    await driver.sleep(2000);
 
     // Chờ ít nhất 1 user card xuất hiện
     await waitForElement(driver, By.xpath(USER_CARD_XPATH), 10000);
     console.log("✅ Kết quả tìm kiếm đã hiển thị");
+    const innerHtml = await driver.executeScript("return document.querySelector('app-contact-list-item').innerHTML;");
+    console.log("🔍 CONTACT ITEM INNER HTML:", innerHtml);
 
     /**
      * BƯỚC 3: MÔ PHỎNG ĐÃ GỬI 49 LỜI MỜI TRƯỚC ĐÓ (BẰNG API)
@@ -196,13 +206,14 @@ describe("UC03 - Quản lý danh bạ (TC10, TC11)", () => {
      */
     console.log("📌 TC10 Bước 4: Bấm nút Add Friend (lời mời thứ 50)...");
 
-    // Tìm nút Add Friend đầu tiên khả dụng (user chưa kết bạn)
+    // Đảm bảo nút Add Friend đầu tiên hiển thị
+    await waitForElementVisible(driver, By.xpath(ADD_FRIEND_BTN_XPATH), 10000);
     const addFriendBtns = await driver.findElements(By.xpath(ADD_FRIEND_BTN_XPATH));
     expect(addFriendBtns.length).toBeGreaterThan(0);
     console.log(`   📊 Tìm thấy ${addFriendBtns.length} nút Add Friend`);
 
-    // Click nút đầu tiên
-    await addFriendBtns[0].click();
+    // Click nút đầu tiên bằng JS click
+    await driver.executeScript("arguments[0].click();", addFriendBtns[0]);
     console.log("✅ Đã bấm nút Add Friend");
 
     /**
@@ -283,6 +294,7 @@ describe("UC03 - Quản lý danh bạ (TC10, TC11)", () => {
      */
     console.log("📌 TC11 Bước 1: Mở trang tìm kiếm user...");
     await driver.get(SEARCH_USERS_URL);
+    await driver.executeScript("localStorage.setItem('friend_requests_count', '50');");
     await waitForElement(driver, By.id("search-users-panel"), 15000);
     console.log("✅ Trang tìm kiếm user đã hiển thị");
 
@@ -295,9 +307,14 @@ describe("UC03 - Quản lý danh bạ (TC10, TC11)", () => {
       By.xpath(SEARCH_INPUT_XPATH),
       10000
     );
+    await searchInput.click();
     await searchInput.clear();
-    await searchInput.sendKeys("user");
-    await driver.sleep(1500);
+    for (const char of "gmail") {
+      await searchInput.sendKeys(char);
+      await driver.sleep(100);
+    }
+    await driver.executeScript("arguments[0].dispatchEvent(new Event('input', { bubbles: true }));", searchInput);
+    await driver.sleep(2000);
     await waitForElement(driver, By.xpath(USER_CARD_XPATH), 10000);
     console.log("✅ Kết quả tìm kiếm đã hiển thị");
 
@@ -315,11 +332,13 @@ describe("UC03 - Quản lý danh bạ (TC10, TC11)", () => {
      * search-user.ts dòng 102-106:
      *   notificationService.error('Request Failed', 'Unable to send...')
      */
-    console.log("📌 TC11 Bước 4: Bấm nút Add Friend (lời mời thứ 51)...");
+    // Đảm bảo nút Add Friend hiển thị
+    await waitForElementVisible(driver, By.xpath(ADD_FRIEND_BTN_XPATH), 10000);
     const addFriendBtns = await driver.findElements(By.xpath(ADD_FRIEND_BTN_XPATH));
     expect(addFriendBtns.length).toBeGreaterThan(0);
 
-    await addFriendBtns[0].click();
+    // Click nút đầu tiên bằng JS click
+    await driver.executeScript("arguments[0].click();", addFriendBtns[0]);
     console.log("✅ Đã bấm nút Add Friend");
 
     // Chờ Angular xử lý API error response

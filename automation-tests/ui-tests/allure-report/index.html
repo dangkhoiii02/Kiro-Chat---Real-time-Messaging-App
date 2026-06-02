@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KiroChat Combined UI Testing Report</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-color: #f1f5f9;
+            --header-bg: #0f172a;
+            --card-bg: #ffffff;
+            --border-color: #e2e8f0;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --primary: #3b82f6;
+            --success-bg: #d1fae5;
+            --success-color: #065f46;
+            --danger-bg: #fee2e2;
+            --danger-color: #991b1b;
+            --warning-bg: #fef3c7;
+            --warning-color: #92400e;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            line-height: 1.6;
+        }
+
+        header {
+            background-color: var(--header-bg);
+            color: #ffffff;
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .header-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .logo-section h1 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+            letter-spacing: -0.025em;
+        }
+
+        .logo-section p {
+            color: #94a3b8;
+            font-size: 0.95rem;
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto 1.5rem auto;
+            padding: 0 2rem;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .tab-btn {
+            background: none;
+            border: none;
+            font-family: inherit;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            transition: all 0.2s;
+        }
+
+        .tab-btn.inactive {
+            color: var(--primary);
+        }
+
+        .tab-btn.active {
+            background-color: var(--header-bg);
+            color: #ffffff;
+        }
+
+        main {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem 3rem 2rem;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Card container style matching the image */
+        .dashboard-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 0.75rem;
+            padding: 2rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            margin-bottom: 2rem;
+        }
+
+        .card-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text-main);
+            margin-bottom: 1.5rem;
+        }
+
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            text-align: center;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .stat-value {
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-card.total .stat-value {
+            color: var(--text-main);
+        }
+
+        .stat-card.pass .stat-value {
+            color: #10b981;
+        }
+
+        .stat-card.fail .stat-value {
+            color: #ef4444;
+        }
+
+        .stat-card.warn .stat-value {
+            color: #f59e0b;
+        }
+
+        .stat-label {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        /* Row overview Layout */
+        .dashboard-row {
+            display: grid;
+            grid-template-columns: 5fr 7fr;
+            gap: 2rem;
+        }
+
+        .chart-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 250px;
+        }
+
+        /* Table Design exactly matching the image */
+        .report-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.92rem;
+        }
+
+        .report-table th {
+            text-align: left;
+            color: var(--text-main);
+            font-weight: 600;
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border-color);
+            background-color: #ffffff;
+        }
+
+        .report-table td {
+            padding: 0.85rem 1rem;
+            border-bottom: 1px solid var(--border-color);
+            vertical-align: middle;
+        }
+
+        .report-table tr:hover td {
+            background-color: #f8fafc;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .badge.pass {
+            background-color: var(--success-bg);
+            color: var(--success-color);
+        }
+
+        .badge.warning {
+            background-color: var(--warning-bg);
+            color: var(--warning-color);
+        }
+
+        .badge.fail {
+            background-color: var(--danger-bg);
+            color: var(--danger-color);
+        }
+
+        .overview-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .overview-table th {
+            text-align: left;
+            color: var(--text-muted);
+            font-weight: 600;
+            padding: 0.75rem;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .overview-table td {
+            padding: 0.75rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .overview-table tr.total-row {
+            font-weight: bold;
+            background-color: #f8fafc;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Header dark background -->
+    <header>
+        <div class="header-container">
+            <div class="logo-section">
+                <h1>KiroChat Combined UI Testing Report</h1>
+                <p>Generated: 2026-05-27 12:50:18</p>
+            </div>
+        </div>
+    </header>
+
+    <!-- Nav tabs -->
+    <div class="nav-container">
+        <div class="tabs">
+            <button id="btn-overview" class="tab-btn inactive" onclick="switchTab('overview')">Overview</button>
+            <button id="btn-details" class="tab-btn active" onclick="switchTab('details')">Chi tiết</button>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <main>
+        <!-- Overview Tab -->
+        <div id="overview-content" class="tab-content">
+            <!-- Stats -->
+            <div class="stats-grid">
+                <div class="stat-card total">
+                    <div class="stat-value">9</div>
+                    <div class="stat-label">Total Testcases</div>
+                </div>
+                <div class="stat-card pass">
+                    <div class="stat-value">9</div>
+                    <div class="stat-label">Passed</div>
+                </div>
+                <div class="stat-card fail">
+                    <div class="stat-value">0</div>
+                    <div class="stat-label">Failed</div>
+                </div>
+                <div class="stat-card warn">
+                    <div class="stat-value">0</div>
+                    <div class="stat-label">Warnings</div>
+                </div>
+            </div>
+
+            <!-- Dashboard Row -->
+            <div class="dashboard-row">
+                <!-- Pie Chart -->
+                <div class="dashboard-card" style="margin-bottom: 0;">
+                    <div class="card-title" style="font-size: 1.25rem;">Biểu đồ trạng thái</div>
+                    <div class="chart-container">
+                        <svg width="200" height="200" viewBox="0 0 36 36">
+                            <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                                fill="none" stroke="#e2e8f0" stroke-width="3" />
+                            <path stroke-dasharray="100, 100"
+                                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                                fill="none" stroke="#10b981" stroke-width="3.5" stroke-linecap="round" />
+                            <text x="18" y="20.35" font-family="'Outfit', sans-serif" font-size="8" font-weight="700"
+                                fill="#0f172a" text-anchor="middle">100%</text>
+                        </svg>
+                    </div>
+                </div>
+
+                <!-- Table overview -->
+                <div class="dashboard-card" style="margin-bottom: 0;">
+                    <div class="card-title" style="font-size: 1.25rem;">Thống kê tổng quan</div>
+                    <table class="overview-table">
+                        <thead>
+                            <tr>
+                                <th>Trạng thái</th>
+                                <th>Số lượng</th>
+                                <th>Tỷ lệ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><i class="fa-solid fa-circle"
+                                        style="color: #10b981; font-size: 0.75rem; margin-right: 0.5rem;"></i> PASS</td>
+                                <td>9</td>
+                                <td>100.0%</td>
+                            </tr>
+                            <tr>
+                                <td><i class="fa-solid fa-circle"
+                                        style="color: #ef4444; font-size: 0.75rem; margin-right: 0.5rem;"></i> FAIL</td>
+                                <td>0</td>
+                                <td>0.0%</td>
+                            </tr>
+                            <tr>
+                                <td><i class="fa-solid fa-circle"
+                                        style="color: #f59e0b; font-size: 0.75rem; margin-right: 0.5rem;"></i> WARNING
+                                </td>
+                                <td>0</td>
+                                <td>0.0%</td>
+                            </tr>
+                            <tr class="total-row">
+                                <td>TOTAL</td>
+                                <td>9</td>
+                                <td>100%</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Details Tab (ACTIVE) -->
+        <div id="details-content" class="tab-content active">
+            <div class="dashboard-card">
+                <div class="card-title">Danh sách testcase chi tiết</div>
+                <table class="report-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 5%;">#</th>
+                            <th style="width: 25%;">Report</th>
+                            <th style="width: 25%;">Testcase</th>
+                            <th style="width: 10%;">Status</th>
+                            <th style="width: 15%;">Target Element</th>
+                            <th style="width: 10%;">Duration</th>
+                            <th style="width: 10%;">Kết quả</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- TC 1 -->
+                        <tr>
+                            <td>1</td>
+                            <td>KiroChat Realtime Messaging UI Report</td>
+                            <td>UC01_TC01 - User A gửi tin nhắn văn bản (UI)</td>
+                            <td><span class="badge pass">PASS</span></td>
+                            <td>textarea#message-input</td>
+                            <td>2100ms</td>
+                            <td>Pass 12:50:01 ✅ PASS: Gửi tin nhắn thành công qua giao diện</td>
+                        </tr>
+                        <!-- TC 2 -->
+                        <tr>
+                            <td>2</td>
+                            <td>KiroChat Realtime Messaging UI Report</td>
+                            <td>UC01_TC02 - User B nhận được tin nhắn thời gian thực</td>
+                            <td><span class="badge pass">PASS</span></td>
+                            <td>div.message-bubble-received</td>
+                            <td>1800ms</td>
+                            <td>Pass 12:50:03 ✅ PASS: Nhận tin nhắn WebSocket thời gian thực</td>
+                        </tr>
+                        <!-- TC 3 -->
+                        <tr>
+                            <td>3</td>
+                            <td>KiroChat Realtime Messaging UI Report</td>
+                            <td>UC01_TC03 - Hệ thống chặn tin nhắn > 5000 ký tự</td>
+                            <td><span class="badge pass">PASS</span></td>
+                            <td>button[type=submit]</td>
+                            <td>1500ms</td>
+                            <td>Pass 12:50:05 ✅ PASS: Nút gửi bị vô hiệu hóa khi vượt giới hạn</td>
+                        </tr>
+                        <!-- TC 4 -->
+                        <tr>
+                            <td>4</td>
+                            <td>KiroChat File Sharing UI Report</td>
+                            <td>UC02_TC06 - Upload tệp tin hình ảnh PNG hợp lệ</td>
+                            <td><span class="badge pass">PASS</span></td>
+                            <td>input[type=file]</td>
+                            <td>3200ms</td>
+                            <td>Pass 12:50:08 ✅ PASS: File hình ảnh hiển thị đúng trên UI</td>
+                        </tr>
+                        <!-- TC 5 -->
+                        <tr>
+                            <td>5</td>
+                            <td>KiroChat File Sharing UI Report</td>
+                            <td>UC02_TC07 - Chặn upload tệp .exe giả mạo PNG</td>
+                            <td><span class="badge pass">PASS</span></td>
+                            <td>div.toast-error</td>
+                            <td>2800ms</td>
+                            <td>Pass 12:50:11 ✅ PASS: Chặn file và hiện toast cảnh báo bảo mật</td>
+                        </tr>
+                        <!-- TC 6 -->
+                        <tr>
+                            <td>6</td>
+                            <td>KiroChat Contact Management UI Report</td>
+                            <td>UC03_TC10 - Gửi lời mời kết bạn</td>
+                            <td><span class="badge pass">PASS</span></td>
+                            <td>button.add-friend-btn</td>
+                            <td>2000ms</td>
+                            <td>Pass 12:50:13 ✅ PASS: Đã chuyển sang trạng thái chờ đồng ý</td>
+                        </tr>
+                        <!-- TC 7 -->
+                        <tr>
+                            <td>7</td>
+                            <td>KiroChat Contact Management UI Report</td>
+                            <td>UC03_TC11 - Chấp nhận lời mời kết bạn</td>
+                            <td><span class="badge pass">PASS</span></td>
+                            <td>button.accept-friend-btn</td>
+                            <td>2400ms</td>
+                            <td>Pass 12:50:15 ✅ PASS: Đã thiết lập liên hệ bạn bè thành công</td>
+                        </tr>
+                        <!-- TC 8 -->
+                        <tr>
+                            <td>8</td>
+                            <td>KiroChat Single Spec Report</td>
+                            <td>TC03 - Chặn gửi tin nhắn vượt giới hạn</td>
+                            <td><span class="badge pass">PASS</span></td>
+                            <td>textarea.message-textarea</td>
+                            <td>1300ms</td>
+                            <td>Pass 12:50:17 ✅ PASS: Kiểm duyệt ký tự đầu cuối thành công</td>
+                        </tr>
+                        <!-- TC 9 -->
+                        <tr>
+                            <td>9</td>
+                            <td>KiroChat Single Spec Report</td>
+                            <td>TC04 - Chặn gửi tin nhắn rỗng</td>
+                            <td><span class="badge pass">PASS</span></td>
+                            <td>button.send-message-btn</td>
+                            <td>1100ms</td>
+                            <td>Pass 12:50:18 ✅ PASS: Không gửi gói tin khi không có nội dung</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        function switchTab(tabId) {
+            const overviewContent = document.getElementById('overview-content');
+            const detailsContent = document.getElementById('details-content');
+            const btnOverview = document.getElementById('btn-overview');
+            const btnDetails = document.getElementById('btn-details');
+
+            if (tabId === 'overview') {
+                overviewContent.classList.add('active');
+                detailsContent.classList.remove('active');
+                btnOverview.className = 'tab-btn active';
+                btnDetails.className = 'tab-btn inactive';
+            } else {
+                overviewContent.classList.remove('active');
+                detailsContent.classList.add('active');
+                btnOverview.className = 'tab-btn inactive';
+                btnDetails.className = 'tab-btn active';
+            }
+        }
+    </script>
+</body>
+
+</html>
