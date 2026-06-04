@@ -6,6 +6,7 @@ import 'package:kiromobile/features/auth/presentation/ui/splash_page.dart';
 import 'package:kiromobile/features/chat/data/models/conversation.dart';
 import 'package:kiromobile/features/chat/presentation/ui/chat_detail_page.dart';
 import 'package:kiromobile/features/chat/presentation/ui/chat_list_page.dart';
+import 'package:kiromobile/features/contact/presentation/ui/contacts_page.dart';
 import 'package:kiromobile/features/auth/presentation/ui/signup_page.dart';
 import 'package:kiromobile/features/auth/presentation/ui/login_page.dart';
 import 'package:kiromobile/features/profile/presentation/ui/profile_page.dart';
@@ -64,6 +65,10 @@ final goRouterProvider = Provider<GoRouter>((ref) {
 
           return ChatDetailPage(conversation: conversation);
         },
+      ),
+      GoRoute(
+        path: appContactsRoute,
+        builder: (context, state) => const ContactsPage(),
       ),
       GoRoute(
         path: appProfileRoute,

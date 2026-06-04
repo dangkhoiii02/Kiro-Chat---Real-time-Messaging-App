@@ -68,7 +68,9 @@ class _ChatListPageState extends ConsumerState<ChatListPage> {
       bottomNavigationBar: NavigationBar(
         selectedIndex: 1,
         onDestinationSelected: (index) {
-          if (index == 3) {
+          if (index == 2) {
+            context.go(appContactsRoute);
+          } else if (index == 3) {
             context.go(appProfileRoute);
           }
         },
@@ -84,7 +86,8 @@ class _ChatListPageState extends ConsumerState<ChatListPage> {
           ),
           NavigationDestination(
             icon: Icon(Icons.groups_outlined),
-            label: 'CRM',
+            selectedIcon: Icon(Icons.groups),
+            label: 'Contacts',
           ),
           NavigationDestination(
             icon: Icon(Icons.person_outline),

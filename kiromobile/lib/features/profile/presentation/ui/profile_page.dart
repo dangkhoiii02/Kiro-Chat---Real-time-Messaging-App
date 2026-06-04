@@ -28,6 +28,37 @@ class ProfilePage extends ConsumerWidget {
           ),
         ],
       ),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: 3,
+        onDestinationSelected: (index) {
+          if (index == 1) {
+            context.go(appChatsRoute);
+          } else if (index == 2) {
+            context.go(appContactsRoute);
+          }
+        },
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.dashboard_outlined),
+            label: 'Dashboard',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.chat_bubble_outline),
+            selectedIcon: Icon(Icons.chat_bubble),
+            label: 'Chat',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.groups_outlined),
+            selectedIcon: Icon(Icons.groups),
+            label: 'Contacts',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.person_outline),
+            selectedIcon: Icon(Icons.person),
+            label: 'Profile',
+          ),
+        ],
+      ),
       body: currentUser.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stackTrace) => Center(
