@@ -9,11 +9,14 @@ enum FriendshipStatus {
   unknown;
 
   factory FriendshipStatus.fromJson(String? value) {
-    return switch (value) {
+    final normalized = value?.trim().toLowerCase();
+
+    return switch (normalized) {
       'not_connected' => FriendshipStatus.notConnected,
       'not_determined' => FriendshipStatus.notDetermined,
       'friend_request_sent' => FriendshipStatus.friendRequestSent,
       'friend_request_received' => FriendshipStatus.friendRequestReceived,
+      'connected' => FriendshipStatus.friends,
       'friends' => FriendshipStatus.friends,
       'blocked' => FriendshipStatus.blocked,
       'blocked_by' => FriendshipStatus.blockedBy,

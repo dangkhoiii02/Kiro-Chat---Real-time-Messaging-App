@@ -4,6 +4,7 @@ class ContactRequest {
   const ContactRequest({
     required this.requestUserId,
     this.username,
+    this.fullname,
     this.firstname,
     this.lastname,
     this.emailAddress,
@@ -12,12 +13,18 @@ class ContactRequest {
 
   final String requestUserId;
   final String? username;
+  final String? fullname;
   final String? firstname;
   final String? lastname;
   final String? emailAddress;
   final String? profilePictureUrl;
 
   String get displayName {
+    final backendFullname = fullname?.trim();
+    if (backendFullname != null && backendFullname.isNotEmpty) {
+      return backendFullname;
+    }
+
     final fullName = [firstname, lastname]
         .where((part) => part != null && part.trim().isNotEmpty)
         .map((part) => part!.trim())
@@ -40,10 +47,14 @@ class ContactRequest {
       requestUserId:
           source['requestUserId'] as String? ?? source['userId'] as String,
       username: source['username'] as String?,
+      fullname: source['fullname'] as String?,
       firstname: source['firstname'] as String?,
       lastname: source['lastname'] as String?,
-      emailAddress: source['emailAddress'] as String?,
-      profilePictureUrl: source['profilePictureUrl'] as String?,
+      emailAddress:
+          source['emailAddress'] as String? ?? source['email'] as String?,
+      profilePictureUrl:
+          source['profilePictureUrl'] as String? ??
+          source['imageUrl'] as String?,
     );
   }
 }

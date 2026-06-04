@@ -6,6 +6,7 @@ class ContactProfile {
     required this.userId,
     required this.friendshipStatus,
     this.username,
+    this.fullname,
     this.firstname,
     this.lastname,
     this.emailAddress,
@@ -14,6 +15,7 @@ class ContactProfile {
 
   final String userId;
   final String? username;
+  final String? fullname;
   final String? firstname;
   final String? lastname;
   final String? emailAddress;
@@ -21,6 +23,11 @@ class ContactProfile {
   final FriendshipStatus friendshipStatus;
 
   String get displayName {
+    final backendFullname = fullname?.trim();
+    if (backendFullname != null && backendFullname.isNotEmpty) {
+      return backendFullname;
+    }
+
     final fullName = [firstname, lastname]
         .where((part) => part != null && part.trim().isNotEmpty)
         .map((part) => part!.trim())
@@ -37,10 +44,12 @@ class ContactProfile {
     return ContactProfile(
       userId: json['userId'] as String,
       username: json['username'] as String?,
+      fullname: json['fullname'] as String?,
       firstname: json['firstname'] as String?,
       lastname: json['lastname'] as String?,
-      emailAddress: json['emailAddress'] as String?,
-      profilePictureUrl: json['profilePictureUrl'] as String?,
+      emailAddress: json['emailAddress'] as String? ?? json['email'] as String?,
+      profilePictureUrl:
+          json['profilePictureUrl'] as String? ?? json['imageUrl'] as String?,
       friendshipStatus: FriendshipStatus.fromJson(
         json['friendshipStatus'] as String?,
       ),
@@ -51,6 +60,7 @@ class ContactProfile {
     return ContactProfile(
       userId: userId,
       username: username,
+      fullname: fullname,
       firstname: firstname,
       lastname: lastname,
       emailAddress: emailAddress,
@@ -68,17 +78,19 @@ class RestContactProfileList {
   factory RestContactProfileList.fromJson(Map<String, dynamic> json) {
     return RestContactProfileList(
       users: PageResponse.fromJson(
-        _pageJson(json, 'users'),
+        _pageJson(json, const ['users', 'contacts']),
         ContactProfile.fromJson,
       ),
     );
   }
 }
 
-Map<String, dynamic> _pageJson(Map<String, dynamic> json, String key) {
-  final nested = json[key];
-  if (nested is Map<String, dynamic>) {
-    return nested;
+Map<String, dynamic> _pageJson(Map<String, dynamic> json, List<String> keys) {
+  for (final key in keys) {
+    final nested = json[key];
+    if (nested is Map<String, dynamic>) {
+      return nested;
+    }
   }
 
   return json;
