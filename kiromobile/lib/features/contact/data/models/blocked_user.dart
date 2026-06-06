@@ -1,8 +1,7 @@
 import 'package:kiromobile/features/chat/data/models/page_response.dart';
-import 'package:kiromobile/features/contact/data/models/friendship_status.dart';
 
-class Friend {
-  const Friend({
+class BlockedUser {
+  const BlockedUser({
     required this.userId,
     this.username,
     this.fullname,
@@ -10,8 +9,7 @@ class Friend {
     this.lastname,
     this.emailAddress,
     this.profilePictureUrl,
-    this.friendshipStatus = FriendshipStatus.unknown,
-    this.isOnline = false,
+    this.reason,
   });
 
   final String userId;
@@ -21,8 +19,7 @@ class Friend {
   final String? lastname;
   final String? emailAddress;
   final String? profilePictureUrl;
-  final FriendshipStatus friendshipStatus;
-  final bool isOnline;
+  final String? reason;
 
   String get displayName {
     final backendFullname = fullname?.trim();
@@ -42,8 +39,8 @@ class Friend {
     return username ?? emailAddress ?? 'Kiro user';
   }
 
-  factory Friend.fromJson(Map<String, dynamic> json) {
-    return Friend(
+  factory BlockedUser.fromJson(Map<String, dynamic> json) {
+    return BlockedUser(
       userId: json['userId'] as String,
       username: json['username'] as String?,
       fullname: json['fullname'] as String?,
@@ -52,38 +49,21 @@ class Friend {
       emailAddress: json['emailAddress'] as String? ?? json['email'] as String?,
       profilePictureUrl:
           json['profilePictureUrl'] as String? ?? json['imageUrl'] as String?,
-      friendshipStatus: FriendshipStatus.fromJson(
-        json['friendshipStatus'] as String?,
-      ),
-      isOnline: (json['isOnline'] as bool?) ?? false,
-    );
-  }
-
-  Friend copyWith({bool? isOnline}) {
-    return Friend(
-      userId: userId,
-      username: username,
-      fullname: fullname,
-      firstname: firstname,
-      lastname: lastname,
-      emailAddress: emailAddress,
-      profilePictureUrl: profilePictureUrl,
-      friendshipStatus: friendshipStatus,
-      isOnline: isOnline ?? this.isOnline,
+      reason: json['reason'] as String?,
     );
   }
 }
 
-class RestFriendList {
-  const RestFriendList({required this.friends});
+class RestBlockedUserList {
+  const RestBlockedUserList({required this.users});
 
-  final PageResponse<Friend> friends;
+  final PageResponse<BlockedUser> users;
 
-  factory RestFriendList.fromJson(Map<String, dynamic> json) {
-    return RestFriendList(
-      friends: PageResponse.fromJson(
-        _pageJson(json, 'friends'),
-        Friend.fromJson,
+  factory RestBlockedUserList.fromJson(Map<String, dynamic> json) {
+    return RestBlockedUserList(
+      users: PageResponse.fromJson(
+        _pageJson(json, 'users'),
+        BlockedUser.fromJson,
       ),
     );
   }

@@ -2,11 +2,14 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kiromobile/core/logging/app_logger.dart';
+import 'package:kiromobile/core/realtime/presence_repository.dart';
 import 'package:kiromobile/core/realtime/stomp_service.dart';
 import 'package:kiromobile/features/chat/data/models/acknowledge_receive_message_request.dart';
 import 'package:kiromobile/features/chat/data/models/chat_message.dart';
+import 'package:kiromobile/features/chat/data/models/presence_event.dart';
 import 'package:kiromobile/features/chat/data/repositories/message_repository.dart';
 import 'package:kiromobile/features/chat/presentation/providers/chat_list_provider.dart';
+import 'package:kiromobile/features/contact/presentation/providers/contacts_controller.dart';
 
 final activeChatConversationIdProvider =
     NotifierProvider<ActiveChatConversationController, String?>(
@@ -32,16 +35,27 @@ final appRealtimeControllerProvider =
     NotifierProvider<AppRealtimeController, bool>(AppRealtimeController.new);
 
 class AppRealtimeController extends Notifier<bool> {
+  static const _presenceHeartbeatInterval = Duration(seconds: 30);
+
   StreamSubscription<ChatMessage>? _incomingMessageSubscription;
   StreamSubscription<Map<String, dynamic>>? _statusEventSubscription;
+  StreamSubscription<PresenceEvent>? _presenceEventSubscription;
+  Timer? _presenceHeartbeatTimer;
+  bool _started = false;
 
   @override
   bool build() {
     final stompService = ref.read(stompServiceProvider);
+    final presenceRepository = ref.read(presenceRepositoryProvider);
 
     ref.onDispose(() {
       _incomingMessageSubscription?.cancel();
       _statusEventSubscription?.cancel();
+      _presenceEventSubscription?.cancel();
+      _presenceHeartbeatTimer?.cancel();
+      if (_started) {
+        unawaited(_sendExplicitOffline(presenceRepository));
+      }
       stompService.disconnect();
     });
 
@@ -55,6 +69,12 @@ class AppRealtimeController extends Notifier<bool> {
 
     final stompService = ref.read(stompServiceProvider);
     await stompService.connect();
+    await _sendPresenceHeartbeat();
+    _presenceHeartbeatTimer?.cancel();
+    _presenceHeartbeatTimer = Timer.periodic(
+      _presenceHeartbeatInterval,
+      (_) => unawaited(_sendPresenceHeartbeat()),
+    );
 
     await _incomingMessageSubscription?.cancel();
     _incomingMessageSubscription = stompService.incomingMessages.listen(
@@ -66,6 +86,12 @@ class AppRealtimeController extends Notifier<bool> {
       _handleStatusEvent,
     );
 
+    await _presenceEventSubscription?.cancel();
+    _presenceEventSubscription = stompService.presenceEvents.listen(
+      _handlePresenceEvent,
+    );
+
+    _started = true;
     state = true;
   }
 
@@ -74,8 +100,14 @@ class AppRealtimeController extends Notifier<bool> {
     _incomingMessageSubscription = null;
     await _statusEventSubscription?.cancel();
     _statusEventSubscription = null;
+    await _presenceEventSubscription?.cancel();
+    _presenceEventSubscription = null;
+    _presenceHeartbeatTimer?.cancel();
+    _presenceHeartbeatTimer = null;
+    await _sendExplicitOffline();
     ref.read(stompServiceProvider).disconnect();
     ref.read(activeChatConversationIdProvider.notifier).clear();
+    _started = false;
     state = false;
   }
 
@@ -136,6 +168,39 @@ class AppRealtimeController extends Notifier<bool> {
     } catch (error, stackTrace) {
       appLogger.w(
         'Cannot apply app-level status event.',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  void _handlePresenceEvent(PresenceEvent event) {
+    ref.read(chatListControllerProvider.notifier).applyPresence(event);
+    ref.read(contactsControllerProvider.notifier).applyPresence(event);
+  }
+
+  Future<void> _sendPresenceHeartbeat([PresenceRepository? repository]) async {
+    try {
+      final PresenceRepository presenceRepository =
+          repository ?? ref.read(presenceRepositoryProvider);
+      await presenceRepository.heartbeat();
+    } catch (error, stackTrace) {
+      appLogger.w(
+        'Cannot send presence heartbeat.',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  Future<void> _sendExplicitOffline([PresenceRepository? repository]) async {
+    try {
+      final PresenceRepository presenceRepository =
+          repository ?? ref.read(presenceRepositoryProvider);
+      await presenceRepository.explicitOffline();
+    } catch (error, stackTrace) {
+      appLogger.w(
+        'Cannot send explicit offline presence.',
         error: error,
         stackTrace: stackTrace,
       );

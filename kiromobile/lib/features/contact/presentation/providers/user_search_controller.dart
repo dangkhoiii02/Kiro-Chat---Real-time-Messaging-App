@@ -129,11 +129,52 @@ class UserSearchController extends Notifier<UserSearchState> {
     );
   }
 
+  Future<void> blockUser(String userId) async {
+    final blocked = await _mutateStatus(
+      userId: userId,
+      action: () => ref.read(contactRepositoryProvider).blockUser(userId),
+      nextStatus: FriendshipStatus.blocked,
+    );
+    if (blocked) {
+      ref.read(contactsControllerProvider.notifier).removeFriendLocally(userId);
+      ref
+          .read(friendRequestsControllerProvider.notifier)
+          .removeRequestLocally(userId);
+    }
+  }
+
+  Future<void> unblockUser(String userId) async {
+    await _mutateStatus(
+      userId: userId,
+      action: () => ref.read(contactRepositoryProvider).unblockUser(userId),
+      nextStatus: FriendshipStatus.notConnected,
+    );
+  }
+
+  void markUserBlocked(String userId) {
+    _replaceUserStatus(userId, FriendshipStatus.blocked);
+  }
+
   Future<Conversation?> openChat(String userId) async {
     try {
-      final conversation = await ref
+      var conversation = await ref
           .read(contactRepositoryProvider)
           .openOrCreateDirectConversation(userId);
+
+      final userProfile = state.users.firstWhere(
+        (u) => u.userId == userId,
+        orElse: () => const ContactProfile(
+          userId: '',
+          friendshipStatus: FriendshipStatus.unknown,
+        ),
+      );
+      if (userProfile.userId.isNotEmpty) {
+        conversation = conversation.copyWith(
+          conversationName: userProfile.displayName,
+          avatarUrl: userProfile.profilePictureUrl,
+        );
+      }
+
       state = state.copyWith(actionErrorMessage: null);
       return conversation;
     } catch (e) {
@@ -151,20 +192,25 @@ class UserSearchController extends Notifier<UserSearchState> {
 
     try {
       await action();
-      state = previousState.copyWith(
-        users: previousState.users
-            .map(
-              (user) => user.userId == userId
-                  ? user.copyWith(friendshipStatus: nextStatus)
-                  : user,
-            )
-            .toList(),
-        actionErrorMessage: null,
-      );
+      state = previousState.copyWith(actionErrorMessage: null);
+      _replaceUserStatus(userId, nextStatus);
       return true;
     } catch (e) {
       state = previousState.copyWith(actionErrorMessage: e.toString());
       return false;
     }
+  }
+
+  void _replaceUserStatus(String userId, FriendshipStatus nextStatus) {
+    state = state.copyWith(
+      users: state.users
+          .map(
+            (user) => user.userId == userId
+                ? user.copyWith(friendshipStatus: nextStatus)
+                : user,
+          )
+          .toList(),
+      actionErrorMessage: null,
+    );
   }
 }

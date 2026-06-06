@@ -1,13 +1,18 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kiromobile/core/realtime/presence_repository.dart';
+import 'package:kiromobile/core/realtime/stomp_service.dart';
 import 'package:kiromobile/features/chat/data/models/conversation.dart';
 import 'package:kiromobile/features/chat/data/models/page_response.dart';
+import 'package:kiromobile/features/chat/data/models/presence_event.dart';
+import 'package:kiromobile/features/contact/data/models/blocked_user.dart';
 import 'package:kiromobile/features/contact/data/models/contact_profile.dart';
 import 'package:kiromobile/features/contact/data/models/contact_request.dart';
 import 'package:kiromobile/features/contact/data/models/friend.dart';
 import 'package:kiromobile/features/contact/data/models/friendship_status.dart';
 import 'package:kiromobile/features/contact/data/repositories/contact_repository.dart';
+import 'package:kiromobile/features/contact/presentation/providers/blocked_users_controller.dart';
 import 'package:kiromobile/features/contact/presentation/providers/contacts_controller.dart';
 import 'package:kiromobile/features/contact/presentation/providers/friend_requests_controller.dart';
 import 'package:kiromobile/features/contact/presentation/providers/user_search_controller.dart';
@@ -25,7 +30,8 @@ void main() {
           last: true,
         ),
       );
-    final container = _container(repository);
+    final fakeStompService = _FakeStompService();
+    final container = _container(repository, stompService: fakeStompService);
     addTearDown(container.dispose);
 
     await container.read(contactsControllerProvider.notifier).loadFriends();
@@ -38,6 +44,7 @@ void main() {
       container.read(contactsControllerProvider).friends.single.userId,
       'friend-1',
     );
+    expect(fakeStompService.presenceUserIds, ['friend-1']);
 
     repository.error = Exception('network failed');
     await container.read(contactsControllerProvider.notifier).loadFriends();
@@ -184,11 +191,205 @@ void main() {
       expect(repository.getContactRequestsCallCount, 0);
     },
   );
+
+  test('ContactsController removes friend after unfriend succeeds', () async {
+    final repository = _FakeContactRepository()
+      ..friendsResult = RestFriendList(
+        friends: PageResponse(
+          content: [_friend('friend-1'), _friend('friend-2')],
+          totalElements: 2,
+          totalPages: 1,
+          pageNumber: 0,
+          pageSize: 20,
+          last: true,
+        ),
+      );
+    final container = _container(repository);
+    addTearDown(container.dispose);
+
+    final controller = container.read(contactsControllerProvider.notifier);
+    await controller.loadFriends();
+    await controller.removeFriend('friend-1');
+
+    expect(repository.removedFriendIds, ['friend-1']);
+    expect(
+      container
+          .read(contactsControllerProvider)
+          .friends
+          .map((friend) => friend.userId),
+      ['friend-2'],
+    );
+  });
+
+  test('block user clears friends, requests, and search status', () async {
+    final repository = _FakeContactRepository()
+      ..friendsResult = RestFriendList(
+        friends: PageResponse(
+          content: [_friend('user-1')],
+          totalElements: 1,
+          totalPages: 1,
+          pageNumber: 0,
+          pageSize: 20,
+          last: true,
+        ),
+      )
+      ..requestsResult = RestContactRequestList(
+        requests: PageResponse(
+          content: [_request('user-1')],
+          totalElements: 1,
+          totalPages: 1,
+          pageNumber: 0,
+          pageSize: 20,
+          last: true,
+        ),
+      )
+      ..searchResult = RestContactProfileList(
+        users: PageResponse(
+          content: [_profile('user-1', FriendshipStatus.friendRequestReceived)],
+          totalElements: 1,
+          totalPages: 1,
+          pageNumber: 0,
+          pageSize: 20,
+          last: true,
+        ),
+      );
+    final container = _container(repository);
+    addTearDown(container.dispose);
+
+    await container.read(contactsControllerProvider.notifier).loadFriends();
+    await container
+        .read(friendRequestsControllerProvider.notifier)
+        .loadRequests();
+    await container
+        .read(userSearchControllerProvider.notifier)
+        .searchUsers('alice');
+
+    await container
+        .read(userSearchControllerProvider.notifier)
+        .blockUser('user-1');
+
+    expect(repository.blockedUserIds, ['user-1']);
+    expect(container.read(contactsControllerProvider).friends, isEmpty);
+    expect(container.read(friendRequestsControllerProvider).requests, isEmpty);
+    expect(
+      container
+          .read(userSearchControllerProvider)
+          .users
+          .single
+          .friendshipStatus,
+      FriendshipStatus.blocked,
+    );
+  });
+
+  test(
+    'BlockedUsersController loads users and removes item after unblock',
+    () async {
+      final repository = _FakeContactRepository()
+        ..blockedUsersResult = RestBlockedUserList(
+          users: PageResponse(
+            content: [_blockedUser('blocked-user-1')],
+            totalElements: 1,
+            totalPages: 1,
+            pageNumber: 0,
+            pageSize: 50,
+            last: true,
+          ),
+        );
+      final container = _container(repository);
+      addTearDown(container.dispose);
+
+      final controller = container.read(
+        blockedUsersControllerProvider.notifier,
+      );
+      await controller.loadBlockedUsers();
+      await controller.unblockUser('blocked-user-1');
+
+      expect(repository.getBlockedUsersCallCount, 1);
+      expect(repository.unblockedUserIds, ['blocked-user-1']);
+      expect(container.read(blockedUsersControllerProvider).users, isEmpty);
+    },
+  );
+
+  test(
+    'ContactsController updates friend online state from presence',
+    () async {
+      final repository = _FakeContactRepository()
+        ..friendsResult = RestFriendList(
+          friends: PageResponse(
+            content: [_friend('friend-1')],
+            totalElements: 1,
+            totalPages: 1,
+            pageNumber: 0,
+            pageSize: 20,
+            last: true,
+          ),
+        );
+      final container = _container(repository);
+      addTearDown(container.dispose);
+
+      final controller = container.read(contactsControllerProvider.notifier);
+      await controller.loadFriends();
+      controller.applyPresence(
+        const PresenceEvent(userId: 'friend-1', isOnline: true),
+      );
+
+      expect(
+        container.read(contactsControllerProvider).friends.single.isOnline,
+        isTrue,
+      );
+    },
+  );
+
+  test(
+    'ContactsController loads presence snapshots after friends are loaded',
+    () async {
+      final repository = _FakeContactRepository()
+        ..friendsResult = RestFriendList(
+          friends: PageResponse(
+            content: [_friend('friend-1')],
+            totalElements: 1,
+            totalPages: 1,
+            pageNumber: 0,
+            pageSize: 20,
+            last: true,
+          ),
+        );
+      final fakePresenceRepository = _FakePresenceRepository()
+        ..presenceByUserId['friend-1'] = const PresenceEvent(
+          userId: 'friend-1',
+          isOnline: true,
+        );
+      final container = _container(
+        repository,
+        presenceRepository: fakePresenceRepository,
+      );
+      addTearDown(container.dispose);
+
+      await container.read(contactsControllerProvider.notifier).loadFriends();
+
+      expect(fakePresenceRepository.presenceUserIds, ['friend-1']);
+      expect(
+        container.read(contactsControllerProvider).friends.single.isOnline,
+        isTrue,
+      );
+    },
+  );
 }
 
-ProviderContainer _container(ContactRepository repository) {
+ProviderContainer _container(
+  ContactRepository repository, {
+  PresenceRepository? presenceRepository,
+  StompService? stompService,
+}) {
   return ProviderContainer(
-    overrides: [contactRepositoryProvider.overrideWithValue(repository)],
+    overrides: [
+      contactRepositoryProvider.overrideWithValue(repository),
+      presenceRepositoryProvider.overrideWithValue(
+        presenceRepository ?? _FakePresenceRepository(),
+      ),
+      if (stompService != null)
+        stompServiceProvider.overrideWithValue(stompService),
+    ],
   );
 }
 
@@ -220,6 +421,15 @@ ContactRequest _request(String requestUserId) {
     username: requestUserId,
     firstname: null,
     lastname: null,
+    profilePictureUrl: null,
+  );
+}
+
+BlockedUser _blockedUser(String userId) {
+  return BlockedUser(
+    userId: userId,
+    username: userId,
+    fullname: 'Blocked User',
     profilePictureUrl: null,
   );
 }
@@ -258,14 +468,28 @@ class _FakeContactRepository extends ContactRepository {
       last: true,
     ),
   );
+  RestBlockedUserList blockedUsersResult = const RestBlockedUserList(
+    users: PageResponse(
+      content: [],
+      totalElements: 0,
+      totalPages: 0,
+      pageNumber: 0,
+      pageSize: 50,
+      last: true,
+    ),
+  );
 
   final sentUserIds = <String>[];
   final cancelledUserIds = <String>[];
   final acceptedUserIds = <String>[];
   final rejectedUserIds = <String>[];
+  final removedFriendIds = <String>[];
+  final blockedUserIds = <String>[];
+  final unblockedUserIds = <String>[];
   final openedUserIds = <String>[];
   int getFriendsCallCount = 0;
   int getContactRequestsCallCount = 0;
+  int getBlockedUsersCallCount = 0;
   Object? acceptError;
 
   @override
@@ -314,6 +538,30 @@ class _FakeContactRepository extends ContactRepository {
   }
 
   @override
+  Future<void> removeFriend(String friendId) async {
+    removedFriendIds.add(friendId);
+  }
+
+  @override
+  Future<void> blockUser(String userId) async {
+    blockedUserIds.add(userId);
+  }
+
+  @override
+  Future<void> unblockUser(String userId) async {
+    unblockedUserIds.add(userId);
+  }
+
+  @override
+  Future<RestBlockedUserList> getBlockedUsers({
+    int page = 0,
+    int size = 50,
+  }) async {
+    getBlockedUsersCallCount += 1;
+    return blockedUsersResult;
+  }
+
+  @override
   Future<Conversation> openOrCreateDirectConversation(String userId) async {
     openedUserIds.add(userId);
     return const Conversation(
@@ -324,5 +572,32 @@ class _FakeContactRepository extends ContactRepository {
       isOnline: false,
       remoteUserId: 'user-1',
     );
+  }
+}
+
+class _FakePresenceRepository extends PresenceRepository {
+  _FakePresenceRepository() : super(Dio());
+
+  final presenceByUserId = <String, PresenceEvent>{};
+  final presenceUserIds = <String>[];
+
+  @override
+  Future<PresenceEvent> getPresence(String userId) async {
+    presenceUserIds.add(userId);
+    return presenceByUserId[userId] ??
+        PresenceEvent(userId: userId, isOnline: false);
+  }
+}
+
+class _FakeStompService extends StompService {
+  _FakeStompService() : super(accessTokenReader: () async => 'access-token');
+
+  final presenceUserIds = <String>[];
+
+  @override
+  void watchPresenceUsers(Iterable<String?> userIds) {
+    presenceUserIds
+      ..clear()
+      ..addAll(userIds.whereType<String>());
   }
 }

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:kiromobile/core/route/route_name.dart';
 import 'package:kiromobile/features/chat/data/models/chat_message.dart';
 import 'package:kiromobile/features/chat/data/models/conversation.dart';
+import 'package:kiromobile/features/chat/presentation/providers/chat_list_provider.dart';
 import 'package:kiromobile/features/chat/presentation/providers/chat_detail_provider.dart';
 
 class ChatDetailPage extends ConsumerStatefulWidget {
@@ -45,6 +46,10 @@ class _ChatDetailPageState extends ConsumerState<ChatDetailPage> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(chatDetailControllerProvider);
+    final conversation = _latestConversation(
+      widget.conversation,
+      ref.watch(chatListControllerProvider).conversations,
+    );
 
     return Scaffold(
       backgroundColor: const Color(0xFFF7F8FA),
@@ -58,7 +63,7 @@ class _ChatDetailPageState extends ConsumerState<ChatDetailPage> {
           onPressed: () => context.go(appChatsRoute),
           icon: const Icon(Icons.arrow_back),
         ),
-        title: _ChatHeaderTitle(conversation: widget.conversation),
+        title: _ChatHeaderTitle(conversation: conversation),
         actions: [
           IconButton(
             tooltip: 'Voice call',
@@ -75,14 +80,11 @@ class _ChatDetailPageState extends ConsumerState<ChatDetailPage> {
       body: Column(
         children: [
           Expanded(
-            child: _ChatDetailBody(
-              conversation: widget.conversation,
-              state: state,
-            ),
+            child: _ChatDetailBody(conversation: conversation, state: state),
           ),
           _MessageComposer(
             controller: _messageController,
-            conversation: widget.conversation,
+            conversation: conversation,
             state: state,
             onSend: _sendMessage,
           ),
@@ -141,7 +143,7 @@ class _ChatHeaderTitle extends StatelessWidget {
                 ),
               ),
               Text(
-                conversation.isOnline ? 'Online' : 'Conversation',
+                conversation.isOnline ? 'Online' : 'Offline',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(color: Color(0xFF7D7F87), fontSize: 12),
@@ -152,6 +154,19 @@ class _ChatHeaderTitle extends StatelessWidget {
       ],
     );
   }
+}
+
+Conversation _latestConversation(
+  Conversation fallback,
+  List<Conversation> conversations,
+) {
+  for (final conversation in conversations) {
+    if (conversation.conversationId == fallback.conversationId) {
+      return conversation;
+    }
+  }
+
+  return fallback;
 }
 
 class _ChatDetailBody extends ConsumerWidget {

@@ -1,7 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:kiromobile/core/logging/app_logger.dart';
+import 'package:kiromobile/core/realtime/presence_repository.dart';
 import 'package:kiromobile/core/realtime/stomp_service.dart';
 import 'package:kiromobile/features/chat/data/models/chat_message.dart';
 import 'package:kiromobile/features/chat/data/models/conversation.dart';
+import 'package:kiromobile/features/chat/data/models/presence_event.dart';
 import 'package:kiromobile/features/chat/data/repositories/conversation_repository.dart';
 
 enum ChatListStatus { initial, loading, success, failure }
@@ -60,9 +63,15 @@ class ChatListController extends Notifier<ChatListState> {
       state = ChatListState.success(result.conversations.content);
       final isDefaultInboxLoad = (query == null || query.isEmpty) && page == 0;
       if (isDefaultInboxLoad) {
-        ref
-            .read(stompServiceProvider)
-            .watchGroupConversations(result.conversations.content);
+        final conversations = result.conversations.content;
+        final stompService = ref.read(stompServiceProvider);
+        stompService.watchGroupConversations(conversations);
+        stompService.watchPresenceUsers(
+          conversations
+              .where((conversation) => !conversation.isGroup)
+              .map((conversation) => conversation.remoteUserId),
+        );
+        await _loadPresenceSnapshots(conversations);
       }
     } catch (e) {
       state = ChatListState.failure(e.toString());
@@ -130,5 +139,57 @@ class ChatListController extends Notifier<ChatListState> {
     );
 
     state = ChatListState.success(nextConversations);
+  }
+
+  void applyPresence(PresenceEvent event) {
+    final conversations = state.conversations;
+    var changed = false;
+    final nextConversations = conversations.map((conversation) {
+      if (conversation.isGroup || conversation.remoteUserId != event.userId) {
+        return conversation;
+      }
+
+      changed = true;
+      return conversation.copyWith(isOnline: event.isOnline);
+    }).toList();
+
+    if (!changed) {
+      return;
+    }
+
+    state = ChatListState.success(nextConversations);
+  }
+
+  Future<void> _loadPresenceSnapshots(List<Conversation> conversations) async {
+    final userIds = conversations
+        .where((conversation) => !conversation.isGroup)
+        .map((conversation) => conversation.remoteUserId)
+        .whereType<String>()
+        .where((userId) => userId.isNotEmpty)
+        .toSet();
+
+    if (userIds.isEmpty) {
+      return;
+    }
+
+    final presenceRepository = ref.read(presenceRepositoryProvider);
+    final snapshots = await Future.wait(
+      userIds.map((userId) async {
+        try {
+          return await presenceRepository.getPresence(userId);
+        } catch (error, stackTrace) {
+          appLogger.w(
+            'Cannot load presence snapshot for user $userId.',
+            error: error,
+            stackTrace: stackTrace,
+          );
+          return null;
+        }
+      }),
+    );
+
+    for (final snapshot in snapshots.whereType<PresenceEvent>()) {
+      applyPresence(snapshot);
+    }
   }
 }

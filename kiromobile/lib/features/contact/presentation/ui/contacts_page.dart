@@ -5,10 +5,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kiromobile/core/route/route_name.dart';
 import 'package:kiromobile/features/chat/data/models/conversation.dart';
+import 'package:kiromobile/features/contact/data/models/blocked_user.dart';
 import 'package:kiromobile/features/contact/data/models/contact_profile.dart';
 import 'package:kiromobile/features/contact/data/models/contact_request.dart';
 import 'package:kiromobile/features/contact/data/models/friend.dart';
 import 'package:kiromobile/features/contact/data/models/friendship_status.dart';
+import 'package:kiromobile/features/contact/presentation/providers/blocked_users_controller.dart';
 import 'package:kiromobile/features/contact/presentation/providers/contacts_controller.dart';
 import 'package:kiromobile/features/contact/presentation/providers/friend_requests_controller.dart';
 import 'package:kiromobile/features/contact/presentation/providers/user_search_controller.dart';
@@ -32,6 +34,7 @@ class _ContactsPageState extends ConsumerState<ContactsPage> {
     Future.microtask(() {
       ref.read(contactsControllerProvider.notifier).loadFriends();
       ref.read(friendRequestsControllerProvider.notifier).loadRequests();
+      ref.read(blockedUsersControllerProvider.notifier).loadBlockedUsers();
     });
   }
 
@@ -46,7 +49,7 @@ class _ContactsPageState extends ConsumerState<ContactsPage> {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 3,
+      length: 4,
       child: Scaffold(
         backgroundColor: const Color(0xFFF7F8FA),
         appBar: AppBar(
@@ -66,6 +69,7 @@ class _ContactsPageState extends ConsumerState<ContactsPage> {
               Tab(text: 'Friends'),
               Tab(text: 'Requests'),
               Tab(text: 'Search'),
+              Tab(text: 'Blocked'),
             ],
           ),
         ),
@@ -77,6 +81,7 @@ class _ContactsPageState extends ConsumerState<ContactsPage> {
               controller: _userSearchController,
               onChanged: _onUserSearchChanged,
             ),
+            const _BlockedTab(),
           ],
         ),
         bottomNavigationBar: NavigationBar(
@@ -270,6 +275,46 @@ class _SearchTab extends ConsumerWidget {
   }
 }
 
+class _BlockedTab extends ConsumerWidget {
+  const _BlockedTab();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(blockedUsersControllerProvider);
+
+    return switch (state.status) {
+      BlockedUsersStatus.initial || BlockedUsersStatus.loading => const Center(
+        child: CircularProgressIndicator(),
+      ),
+      BlockedUsersStatus.failure => _ErrorState(
+        message: state.errorMessage ?? 'Cannot load blocked users.',
+        onRetry: () => ref
+            .read(blockedUsersControllerProvider.notifier)
+            .loadBlockedUsers(),
+      ),
+      BlockedUsersStatus.success =>
+        state.users.isEmpty
+            ? const _EmptyState(message: 'No blocked users')
+            : RefreshIndicator(
+                onRefresh: () => ref
+                    .read(blockedUsersControllerProvider.notifier)
+                    .loadBlockedUsers(),
+                child: ListView.separated(
+                  itemCount: state.users.length,
+                  separatorBuilder: (_, _) => const Divider(
+                    height: 1,
+                    thickness: 1,
+                    color: Color(0xFFE1E4EA),
+                  ),
+                  itemBuilder: (context, index) {
+                    return _BlockedUserTile(user: state.users[index]);
+                  },
+                ),
+              ),
+    };
+  }
+}
+
 class _FriendTile extends ConsumerWidget {
   const _FriendTile({required this.friend});
 
@@ -282,17 +327,78 @@ class _FriendTile extends ConsumerWidget {
       subtitle: friend.username == null ? null : '@${friend.username}',
       avatarUrl: friend.profilePictureUrl,
       isOnline: friend.isOnline,
-      trailing: IconButton(
-        tooltip: 'Message',
-        onPressed: () async {
-          final conversation = await ref
-              .read(contactsControllerProvider.notifier)
-              .openChat(friend.userId);
-          if (context.mounted) {
-            _goToConversation(context, conversation);
-          }
-        },
-        icon: const Icon(Icons.chat_bubble_outline),
+      trailing: Wrap(
+        spacing: 4,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          IconButton(
+            tooltip: 'Message',
+            onPressed: () async {
+              final conversation = await ref
+                  .read(contactsControllerProvider.notifier)
+                  .openChat(friend.userId);
+              if (context.mounted) {
+                _goToConversation(context, conversation);
+              }
+            },
+            icon: const Icon(Icons.chat_bubble_outline),
+          ),
+          PopupMenuButton<_FriendAction>(
+            tooltip: 'More actions',
+            onSelected: (action) async {
+              if (action == _FriendAction.unfriend) {
+                final confirmed = await _confirmAction(
+                  context,
+                  title: 'Unfriend ${friend.displayName}?',
+                  message: 'They will be removed from your friends list.',
+                  confirmLabel: 'Unfriend',
+                );
+                if (!confirmed || !context.mounted) {
+                  return;
+                }
+
+                await ref
+                    .read(contactsControllerProvider.notifier)
+                    .removeFriend(friend.userId);
+                if (context.mounted) {
+                  _showActionError(
+                    context,
+                    ref.read(contactsControllerProvider).actionErrorMessage,
+                  );
+                }
+                return;
+              }
+
+              final confirmed = await _confirmAction(
+                context,
+                title: 'Block ${friend.displayName}?',
+                message: 'They will not be able to interact with you.',
+                confirmLabel: 'Block',
+                destructive: true,
+              );
+              if (!confirmed || !context.mounted) {
+                return;
+              }
+
+              await ref
+                  .read(contactsControllerProvider.notifier)
+                  .blockUser(friend.userId);
+              if (context.mounted) {
+                _showActionError(
+                  context,
+                  ref.read(contactsControllerProvider).actionErrorMessage,
+                );
+              }
+            },
+            itemBuilder: (context) => const [
+              PopupMenuItem(
+                value: _FriendAction.unfriend,
+                child: Text('Unfriend'),
+              ),
+              PopupMenuItem(value: _FriendAction.block, child: Text('Block')),
+            ],
+          ),
+        ],
       ),
       onTap: () async {
         final conversation = await ref
@@ -350,6 +456,32 @@ class _RequestTile extends ConsumerWidget {
             },
             icon: const Icon(Icons.close),
           ),
+          IconButton.outlined(
+            tooltip: 'Block',
+            onPressed: () async {
+              final confirmed = await _confirmAction(
+                context,
+                title: 'Block ${request.displayName}?',
+                message: 'This request will be removed.',
+                confirmLabel: 'Block',
+                destructive: true,
+              );
+              if (!confirmed || !context.mounted) {
+                return;
+              }
+
+              await ref
+                  .read(friendRequestsControllerProvider.notifier)
+                  .blockRequest(request.requestUserId);
+              if (context.mounted) {
+                _showActionError(
+                  context,
+                  ref.read(friendRequestsControllerProvider).actionErrorMessage,
+                );
+              }
+            },
+            icon: const Icon(Icons.block),
+          ),
         ],
       ),
     );
@@ -382,35 +514,49 @@ class _SearchActionButtons extends ConsumerWidget {
     final controller = ref.read(userSearchControllerProvider.notifier);
 
     return switch (user.friendshipStatus) {
-      FriendshipStatus.notConnected ||
-      FriendshipStatus.notDetermined => FilledButton.icon(
-        onPressed: () async {
-          await controller.sendRequest(user.userId);
-          if (context.mounted) {
-            _showActionError(
-              context,
-              ref.read(userSearchControllerProvider).actionErrorMessage,
-            );
-          }
-        },
-        icon: const Icon(Icons.person_add_alt_1),
-        label: const Text('Add'),
+      FriendshipStatus.notConnected || FriendshipStatus.notDetermined => Wrap(
+        spacing: 4,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          FilledButton.icon(
+            onPressed: () async {
+              await controller.sendRequest(user.userId);
+              if (context.mounted) {
+                _showActionError(
+                  context,
+                  ref.read(userSearchControllerProvider).actionErrorMessage,
+                );
+              }
+            },
+            icon: const Icon(Icons.person_add_alt_1),
+            label: const Text('Add'),
+          ),
+          _SearchBlockButton(user: user),
+        ],
       ),
-      FriendshipStatus.friendRequestSent => OutlinedButton.icon(
-        onPressed: () async {
-          await controller.cancelRequest(user.userId);
-          if (context.mounted) {
-            _showActionError(
-              context,
-              ref.read(userSearchControllerProvider).actionErrorMessage,
-            );
-          }
-        },
-        icon: const Icon(Icons.hourglass_empty),
-        label: const Text('Pending'),
+      FriendshipStatus.friendRequestSent => Wrap(
+        spacing: 4,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          OutlinedButton.icon(
+            onPressed: () async {
+              await controller.cancelRequest(user.userId);
+              if (context.mounted) {
+                _showActionError(
+                  context,
+                  ref.read(userSearchControllerProvider).actionErrorMessage,
+                );
+              }
+            },
+            icon: const Icon(Icons.hourglass_empty),
+            label: const Text('Pending'),
+          ),
+          _SearchBlockButton(user: user),
+        ],
       ),
       FriendshipStatus.friendRequestReceived => Wrap(
-        spacing: 8,
+        spacing: 4,
+        crossAxisAlignment: WrapCrossAlignment.center,
         children: [
           IconButton.filled(
             tooltip: 'Accept',
@@ -438,19 +584,39 @@ class _SearchActionButtons extends ConsumerWidget {
             },
             icon: const Icon(Icons.close),
           ),
+          _SearchBlockButton(user: user),
         ],
       ),
-      FriendshipStatus.friends => IconButton(
-        tooltip: 'Message',
+      FriendshipStatus.friends => Wrap(
+        spacing: 4,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          IconButton(
+            tooltip: 'Message',
+            onPressed: () async {
+              final conversation = await controller.openChat(user.userId);
+              if (context.mounted) {
+                _goToConversation(context, conversation);
+              }
+            },
+            icon: const Icon(Icons.chat_bubble_outline),
+          ),
+          _SearchBlockButton(user: user),
+        ],
+      ),
+      FriendshipStatus.blocked => OutlinedButton.icon(
         onPressed: () async {
-          final conversation = await controller.openChat(user.userId);
+          await controller.unblockUser(user.userId);
           if (context.mounted) {
-            _goToConversation(context, conversation);
+            _showActionError(
+              context,
+              ref.read(userSearchControllerProvider).actionErrorMessage,
+            );
           }
         },
-        icon: const Icon(Icons.chat_bubble_outline),
+        icon: const Icon(Icons.lock_open),
+        label: const Text('Unblock'),
       ),
-      FriendshipStatus.blocked ||
       FriendshipStatus.blockedBy ||
       FriendshipStatus.unknown => const IconButton(
         tooltip: 'Unavailable',
@@ -458,6 +624,72 @@ class _SearchActionButtons extends ConsumerWidget {
         icon: Icon(Icons.block),
       ),
     };
+  }
+}
+
+class _SearchBlockButton extends ConsumerWidget {
+  const _SearchBlockButton({required this.user});
+
+  final ContactProfile user;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return IconButton.outlined(
+      tooltip: 'Block',
+      onPressed: () async {
+        final confirmed = await _confirmAction(
+          context,
+          title: 'Block ${user.displayName}?',
+          message: 'They will not be able to interact with you.',
+          confirmLabel: 'Block',
+          destructive: true,
+        );
+        if (!confirmed || !context.mounted) {
+          return;
+        }
+
+        await ref
+            .read(userSearchControllerProvider.notifier)
+            .blockUser(user.userId);
+        if (context.mounted) {
+          _showActionError(
+            context,
+            ref.read(userSearchControllerProvider).actionErrorMessage,
+          );
+        }
+      },
+      icon: const Icon(Icons.block),
+    );
+  }
+}
+
+class _BlockedUserTile extends ConsumerWidget {
+  const _BlockedUserTile({required this.user});
+
+  final BlockedUser user;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return _ContactListTile(
+      title: user.displayName,
+      subtitle: user.username == null ? null : '@${user.username}',
+      avatarUrl: user.profilePictureUrl,
+      trailing: OutlinedButton.icon(
+        onPressed: () async {
+          await ref
+              .read(blockedUsersControllerProvider.notifier)
+              .unblockUser(user.userId);
+          if (context.mounted) {
+            _showActionError(
+              context,
+              ref.read(blockedUsersControllerProvider).actionErrorMessage,
+            );
+          }
+        },
+        icon: const Icon(Icons.lock_open),
+        label: const Text('Unblock'),
+      ),
+    );
   }
 }
 
@@ -680,6 +912,8 @@ class _EmptyState extends StatelessWidget {
   }
 }
 
+enum _FriendAction { unfriend, block }
+
 void _goToConversation(BuildContext context, Conversation? conversation) {
   if (conversation == null) {
     ScaffoldMessenger.of(
@@ -697,4 +931,40 @@ void _showActionError(BuildContext context, String? message) {
   }
 
   ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+}
+
+Future<bool> _confirmAction(
+  BuildContext context, {
+  required String title,
+  required String message,
+  required String confirmLabel,
+  bool destructive = false,
+}) async {
+  final result = await showDialog<bool>(
+    context: context,
+    builder: (context) {
+      return AlertDialog(
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: destructive
+                ? FilledButton.styleFrom(
+                    backgroundColor: const Color(0xFFB42318),
+                    foregroundColor: Colors.white,
+                  )
+                : null,
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(confirmLabel),
+          ),
+        ],
+      );
+    },
+  );
+
+  return result ?? false;
 }

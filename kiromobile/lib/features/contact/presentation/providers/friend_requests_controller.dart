@@ -80,7 +80,7 @@ class FriendRequestsController extends Notifier<FriendRequestsState> {
       await ref
           .read(contactRepositoryProvider)
           .acceptContactRequest(requestUserId);
-      _removeRequest(requestUserId);
+      removeRequestLocally(requestUserId);
       await ref.read(contactsControllerProvider.notifier).loadFriends();
     } catch (e) {
       state = previousState.copyWith(actionErrorMessage: e.toString());
@@ -94,13 +94,24 @@ class FriendRequestsController extends Notifier<FriendRequestsState> {
       await ref
           .read(contactRepositoryProvider)
           .rejectContactRequest(requestUserId);
-      _removeRequest(requestUserId);
+      removeRequestLocally(requestUserId);
     } catch (e) {
       state = previousState.copyWith(actionErrorMessage: e.toString());
     }
   }
 
-  void _removeRequest(String requestUserId) {
+  Future<void> blockRequest(String requestUserId) async {
+    final previousState = state;
+
+    try {
+      await ref.read(contactRepositoryProvider).blockUser(requestUserId);
+      removeRequestLocally(requestUserId);
+    } catch (e) {
+      state = previousState.copyWith(actionErrorMessage: e.toString());
+    }
+  }
+
+  void removeRequestLocally(String requestUserId) {
     state = state.copyWith(
       status: FriendRequestsStatus.success,
       requests: state.requests

@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kiromobile/features/contact/data/models/contact_profile.dart';
 import 'package:kiromobile/features/contact/data/models/contact_request.dart';
+import 'package:kiromobile/features/contact/data/models/blocked_user.dart';
 import 'package:kiromobile/features/contact/data/models/friend.dart';
 import 'package:kiromobile/features/contact/data/models/friendship_status.dart';
 
@@ -211,6 +212,39 @@ void main() {
       request.profilePictureUrl,
       'http://localhost:9000/kiro-bucket-01/b.png',
     );
+  });
+
+  test('RestBlockedUserList parses blocked users response', () {
+    final result = RestBlockedUserList.fromJson({
+      'users': {
+        'content': [
+          {
+            'userId': 'blocked-user-1',
+            'fullname': 'Nguyen Van A',
+            'username': 'nva_dev',
+            'email': 'nva@example.com',
+            'imageUrl': 'http://localhost:9000/kiro-bucket-01/avatar.png',
+            'reason': 'spam',
+          },
+        ],
+        'totalElements': 1,
+        'totalPages': 1,
+        'number': 0,
+        'size': 20,
+        'last': true,
+      },
+    });
+
+    final blockedUser = result.users.content.single;
+
+    expect(blockedUser.userId, 'blocked-user-1');
+    expect(blockedUser.displayName, 'Nguyen Van A');
+    expect(blockedUser.emailAddress, 'nva@example.com');
+    expect(
+      blockedUser.profilePictureUrl,
+      'http://localhost:9000/kiro-bucket-01/avatar.png',
+    );
+    expect(blockedUser.reason, 'spam');
   });
 
   test('FriendshipStatus maps backend values', () {

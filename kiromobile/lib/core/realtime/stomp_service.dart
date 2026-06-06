@@ -7,6 +7,7 @@ import 'package:kiromobile/core/logging/app_logger.dart';
 import 'package:kiromobile/features/auth/presentation/providers/auth_provider.dart';
 import 'package:kiromobile/features/chat/data/models/chat_message.dart';
 import 'package:kiromobile/features/chat/data/models/conversation.dart';
+import 'package:kiromobile/features/chat/data/models/presence_event.dart';
 import 'package:stomp_dart_client/stomp_dart_client.dart';
 
 final stompServiceProvider = Provider<StompService>((ref) {
@@ -28,17 +29,21 @@ class StompService {
   final _incomingMessagesController = StreamController<ChatMessage>.broadcast();
   final _statusEventsController =
       StreamController<Map<String, dynamic>>.broadcast();
+  final _presenceEventsController = StreamController<PresenceEvent>.broadcast();
 
   StompClient? _client;
   StompUnsubscribe? _userMessageUnsubscribe;
   final Set<String> _groupConversationIds = {};
+  final Set<String> _presenceUserIds = {};
   final Map<String, StompUnsubscribe> _groupMessageUnsubscribes = {};
+  final Map<String, StompUnsubscribe> _presenceUnsubscribes = {};
   final List<StompUnsubscribe> _statusUnsubscribes = [];
 
   Stream<ChatMessage> get incomingMessages =>
       _incomingMessagesController.stream;
   Stream<Map<String, dynamic>> get statusEvents =>
       _statusEventsController.stream;
+  Stream<PresenceEvent> get presenceEvents => _presenceEventsController.stream;
 
   bool get isConnected => _client?.connected ?? false;
 
@@ -66,6 +71,7 @@ class StompService {
           _groupMessageUnsubscribes.clear();
           _subscribeUserMessageQueue();
           _subscribeStatusTopics();
+          _subscribePresenceTopics();
           _subscribeGroupTopics();
         },
         onWebSocketError: (error) {
@@ -92,6 +98,16 @@ class StompService {
     }
   }
 
+  void watchPresenceUsers(Iterable<String?> userIds) {
+    _presenceUserIds.addAll(
+      userIds.whereType<String>().where((userId) => userId.isNotEmpty),
+    );
+
+    if (isConnected) {
+      _subscribePresenceTopics();
+    }
+  }
+
   void clearConversationSubscriptions() {
     for (final unsubscribe in _groupMessageUnsubscribes.values) {
       unsubscribe();
@@ -110,6 +126,10 @@ class StompService {
       unsubscribe();
     }
     _statusUnsubscribes.clear();
+    for (final unsubscribe in _presenceUnsubscribes.values) {
+      unsubscribe();
+    }
+    _presenceUnsubscribes.clear();
     _client?.deactivate();
     _client = null;
   }
@@ -118,6 +138,7 @@ class StompService {
     disconnect();
     _incomingMessagesController.close();
     _statusEventsController.close();
+    _presenceEventsController.close();
   }
 
   void _subscribeUserMessageQueue() {
@@ -183,6 +204,24 @@ class StompService {
     }
   }
 
+  void _subscribePresenceTopics() {
+    final client = _client;
+    if (client == null || !client.connected) {
+      return;
+    }
+
+    for (final userId in _presenceUserIds) {
+      if (_presenceUnsubscribes.containsKey(userId)) {
+        continue;
+      }
+
+      _presenceUnsubscribes[userId] = client.subscribe(
+        destination: '/topic/presence.user-$userId.update',
+        callback: _handlePresenceEvent,
+      );
+    }
+  }
+
   void _handleIncomingMessage(
     StompFrame frame, [
     String? expectedConversationId,
@@ -228,6 +267,24 @@ class StompService {
     } catch (error, stackTrace) {
       appLogger.w(
         'Cannot parse STOMP status event.',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  void _handlePresenceEvent(StompFrame frame) {
+    final body = frame.body;
+    if (body == null || body.isEmpty) {
+      return;
+    }
+
+    try {
+      final json = jsonDecode(body) as Map<String, dynamic>;
+      _presenceEventsController.add(PresenceEvent.fromJson(json));
+    } catch (error, stackTrace) {
+      appLogger.w(
+        'Cannot parse STOMP presence event.',
         error: error,
         stackTrace: stackTrace,
       );

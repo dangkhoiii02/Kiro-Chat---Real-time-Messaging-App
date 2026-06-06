@@ -27,11 +27,11 @@ class Conversation {
 
   factory Conversation.fromJson(Map<String, dynamic> json) {
     final lastMessageJson = json['lastMessage'];
-    final conversationId = json['conversationId'] as String;
+    final conversationId = json['conversationId'] as String? ?? '';
 
     return Conversation(
       conversationId: conversationId,
-      conversationName: json['conversationName'] as String,
+      conversationName: json['conversationName'] as String? ?? 'Chat',
       avatarUrl: json['avatarUrl'] as String?,
       lastMessage: lastMessageJson is Map<String, dynamic>
           ? ChatMessage.fromJson({
@@ -41,8 +41,10 @@ class Conversation {
             })
           : null,
       unreadCount: (json['unreadCount'] as num?)?.toInt() ?? 0,
-      isOnline: (json['isOnline'] as bool?) ?? false,
-      isGroup: (json['isGroup'] as bool?) ?? false,
+      isOnline: false,
+      isGroup:
+          (json['isGroup'] as bool?) ??
+          ((json['conversationType'] ?? json['type']) as String?) == 'GROUP',
       remoteUserId: json['remoteUserId'] as String?,
       isFollowingUp: json['isFollowingUp'] as bool?,
       isArchived: json['isArchived'] as bool?,
@@ -50,17 +52,19 @@ class Conversation {
   }
 
   Conversation copyWith({
+    String? conversationName,
+    String? avatarUrl,
     ChatMessage? lastMessage,
     int? unreadCount,
     bool? isOnline,
   }) {
     return Conversation(
       conversationId: conversationId,
-      conversationName: conversationName,
+      conversationName: conversationName ?? this.conversationName,
       isGroup: isGroup,
       unreadCount: unreadCount ?? this.unreadCount,
       isOnline: isOnline ?? this.isOnline,
-      avatarUrl: avatarUrl,
+      avatarUrl: avatarUrl ?? this.avatarUrl,
       lastMessage: lastMessage ?? this.lastMessage,
       remoteUserId: remoteUserId,
       isFollowingUp: isFollowingUp,

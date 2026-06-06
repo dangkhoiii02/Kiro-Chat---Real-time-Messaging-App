@@ -94,6 +94,50 @@ void main() {
   });
 
   test(
+    'friend and block mutations call the backend contract endpoints',
+    () async {
+      final calls = <String>[];
+      final adapter = _ContactAdapter((options) async {
+        calls.add('${options.method} ${options.path}');
+        return _jsonResponse({});
+      });
+      final repository = ContactRepository(_dio(adapter));
+
+      await repository.removeFriend('friend-1');
+      await repository.blockUser('user-1');
+      await repository.unblockUser('user-1');
+
+      expect(calls, [
+        'DELETE /friends/friend-1',
+        'POST /blocks/user-1',
+        'DELETE /blocks/user-1',
+      ]);
+    },
+  );
+
+  test('getBlockedUsers calls blocks endpoint with paging', () async {
+    final adapter = _ContactAdapter((options) async {
+      expect(options.method, 'GET');
+      expect(options.path, '/blocks');
+      expect(options.queryParameters, {'page': 1, 'size': 10});
+
+      return _jsonResponse({
+        'users': {
+          'content': [],
+          'totalElements': 0,
+          'totalPages': 0,
+          'number': 1,
+          'size': 10,
+          'last': true,
+        },
+      });
+    });
+    final repository = ContactRepository(_dio(adapter));
+
+    await repository.getBlockedUsers(page: 1, size: 10);
+  });
+
+  test(
     'openOrCreateDirectConversation returns existing direct conversation',
     () async {
       final calls = <String>[];

@@ -450,7 +450,7 @@ class _ConversationAvatar extends StatelessWidget {
               width: 12,
               height: 12,
               decoration: BoxDecoration(
-                color: const Color(0xFF9CA3AF),
+                color: const Color.fromARGB(255, 0, 255, 64),
                 shape: BoxShape.circle,
                 border: Border.all(color: Colors.white, width: 2),
               ),

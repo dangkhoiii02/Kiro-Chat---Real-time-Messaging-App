@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kiromobile/features/chat/data/models/chat_message.dart';
 import 'package:kiromobile/features/chat/data/models/conversation.dart';
 import 'package:kiromobile/features/chat/data/models/conversation_message_list.dart';
+import 'package:kiromobile/features/chat/data/models/presence_event.dart';
 
 void main() {
   test('Conversation.fromJson maps chat list item from backend payload', () {
@@ -30,6 +31,19 @@ void main() {
     expect(conversation.isGroup, isTrue);
     expect(conversation.unreadCount, 3);
     expect(conversation.lastMessage?.content, 'Hello');
+  });
+
+  test('Conversation.fromJson ignores backend snapshot online flag', () {
+    final conversation = Conversation.fromJson({
+      'conversationId': 'conversation-1',
+      'conversationName': 'Bob',
+      'unreadCount': 0,
+      'isOnline': true,
+      'isGroup': false,
+      'remoteUserId': 'user-1',
+    });
+
+    expect(conversation.isOnline, isFalse);
   });
 
   test('ChatMessage.fromJson maps message and owner flag', () {
@@ -77,5 +91,29 @@ void main() {
     expect(list.messages, hasLength(1));
     expect(list.hasMore, isTrue);
     expect(list.nextBeforeMessageId, 'message-1');
+  });
+
+  test('PresenceEvent.fromJson normalizes backend status payload', () {
+    final event = PresenceEvent.fromJson({
+      'userId': 'user-1',
+      'status': 'online',
+      'lastSeen': '2026-06-05T08:30:00.000Z',
+      'connectedAt': '2026-06-05T08:00:00.000Z',
+    });
+
+    expect(event.userId, 'user-1');
+    expect(event.isOnline, isTrue);
+    expect(event.lastSeen, DateTime.parse('2026-06-05T08:30:00.000Z'));
+  });
+
+  test('PresenceEvent.fromJson accepts boolean online aliases', () {
+    final event = PresenceEvent.fromJson({
+      'userId': 'user-1',
+      'isOnline': false,
+    });
+
+    expect(event.userId, 'user-1');
+    expect(event.isOnline, isFalse);
+    expect(event.lastSeen, isNull);
   });
 }
